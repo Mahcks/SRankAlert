@@ -6,6 +6,24 @@ milestones; their release dates were not recorded.
 
 ## Unreleased
 
+## 0.5.4 - 2026-09-21
+
+### Changed
+
+- Hold-to-restart now defaults **on** (`RESTART_ENABLED: true`), after live use as co-op
+  host confirmed it restarts the mission, resets the score, and still allows an S run afterward. It still needs an incident alert, the local host, and a
+  deliberate hold. Set `false` for dismiss only. Fresh configs and a missing field
+  in a valid config use the default (on). Existing `config.json` files keep their
+  saved value; an existing `false` stays off until edited.
+
+### Fixed
+
+- Invalid `RESTART_ENABLED` values and broken/unreadable config files leave restart
+  off for that session with a warning. A config error cannot silently undo an opt-out.
+- Updated the settings guide, example, release notes and regression tests for the
+  new default. Live co-op evidence remains limited to the author's recorded test;
+  its mod version and config were not recorded.
+
 ## 0.5.3 - 2026-09-21
 
 ### Added

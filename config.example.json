@@ -1,7 +1,7 @@
 {
   "ACTION_KEY": "F11",
   "TOGGLE_KEY": "F8",
-  "RESTART_ENABLED": false,
+  "RESTART_ENABLED": true,
   "RESTART_HOLD_SECONDS": 4,
   "SCALE": 1.15,
   "START_ENABLED": true,

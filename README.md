@@ -2,18 +2,18 @@
 
 **A small warning that pops up mid-mission when something happens that can cost you an S rank in Ready or Not.**
 
-Kill a civilian, lose a human teammate, trip a penalty, fail an objective: a short message appears just above your crosshair so you know right away, instead of finding out at the debrief screen. Version 0.5.3.
+Kill a civilian, lose a human teammate, trip a penalty, fail an objective: a short message appears just above your crosshair so you know right away, instead of finding out at the debrief screen. Version 0.5.4.
 
-**[Download v0.5.3](https://github.com/Mahcks/SRankAlert/releases/download/v0.5.3/SRankAlert-0.5.3.zip)** · [Release notes](https://github.com/Mahcks/SRankAlert/releases/tag/v0.5.3) · [All versions](https://github.com/Mahcks/SRankAlert/releases)
+**[Download v0.5.4](https://github.com/Mahcks/SRankAlert/releases/download/v0.5.4/SRankAlert-0.5.4.zip)** · [Release notes](https://github.com/Mahcks/SRankAlert/releases/tag/v0.5.4) · [All versions](https://github.com/Mahcks/SRankAlert/releases)
 
 Two things to know up front:
 
 - It's an early warning, not a judge. If it stays quiet, that does **not** promise you an S rank. It only watches for the things listed under [What you'll see](#what-youll-see).
-- By default, it reads scoring data and shows alerts. An experimental mission-restart action is available only if you enable it in your settings; see [Controls](#controls).
+- It reads scoring data and shows alerts. It also has a hold-to-restart action for single-player and co-op hosts: hold F9 for three seconds during an incident alert. You can turn it off in your settings; see [Controls](#controls).
 
 ## Screenshots
 
-Here's SRankAlert v0.5.2 in-game at 1920×1080. These shots have the optional experimental restart action enabled; with default settings, you'll see only the dismiss tile.
+Here's SRankAlert v0.5.2 in-game at 1920×1080. The second tile, with the red fill, is the hold-to-restart control. Single-player and co-op hosts see it. Co-op clients see only the dismiss tile.
 
 ![A Friendly Team Kill alert outside a storefront, with F9 dismiss and a partially filled hold-to-restart tile.](docs/images/friendly-team-kill.jpg)
 
@@ -37,7 +37,7 @@ If you get stuck on UE4SS itself, its [documentation](https://docs.ue4ss.com/ins
 
 ## Installing
 
-Download **[SRankAlert-0.5.3.zip](https://github.com/Mahcks/SRankAlert/releases/download/v0.5.3/SRankAlert-0.5.3.zip)** from the [v0.5.3 release](https://github.com/Mahcks/SRankAlert/releases/tag/v0.5.3). For another version, open [Releases](https://github.com/Mahcks/SRankAlert/releases) and choose the named `SRankAlert-VERSION.zip` under that version's **Assets**. The automatic "Source code" downloads are for development; use the named mod ZIP to install.
+Download **[SRankAlert-0.5.4.zip](https://github.com/Mahcks/SRankAlert/releases/download/v0.5.4/SRankAlert-0.5.4.zip)** from the [v0.5.4 release](https://github.com/Mahcks/SRankAlert/releases/tag/v0.5.4). For another version, open [Releases](https://github.com/Mahcks/SRankAlert/releases) and choose the named `SRankAlert-VERSION.zip` under that version's **Assets**. The automatic "Source code" downloads are for development; use the named mod ZIP to install.
 
 There are two ways to install it: let a small **install script** do the copying and the `mods.txt` edit for you, or do everything by hand. Either way, you do steps 0 to 2 yourself, because the script doesn't install UE4SS.
 
@@ -153,7 +153,7 @@ The easiest check is in-game: a brief **S-RANK ALERTS ACTIVE** message shortly a
 For a proper check, open `ReadyOrNot\Binaries\Win64\ue4ss\UE4SS.log` in Notepad (UE4SS starts a fresh one each time you launch the game) and search for `[SRankAlert]`. A healthy start looks roughly like this:
 
 ```
-[SRankAlert] loaded v0.5.3; ... F9 tap dismiss / restart disabled
+[SRankAlert] loaded v0.5.4; ... F9 tap dismiss / hold host restart enabled (experimental)
 [SRankAlert] game-thread route: ExecuteInGameThreadWithDelay
 [SRankAlert] character HUD observed; waiting for widget tree
 [SRankAlert] toast attached after 250ms; poll=350ms
@@ -213,9 +213,9 @@ Change `"TOGGLE_KEY": "F8"` in `config.json` if needed. Use a different key from
 
 **F9 handles the current alert:**
 
-**Restart is off by default.** If you choose to try this experimental feature,
-set `"RESTART_ENABLED": true` in `config.json`. The hold actions below apply only
-when you've enabled it. Without it, you get the dismiss tile alone.
+Restart is **on by default**. If you'd rather not have it, set `"RESTART_ENABLED": false`
+in `config.json` and you'll get the dismiss tile alone. (The `loaded` line in
+[Did it work?](#did-it-work) then ends with `restart disabled`.)
 
 | What you do | What happens |
 |---|---|
@@ -224,12 +224,12 @@ when you've enabled it. Without it, you get the dismiss tile alone.
 | **Hold F9 for 3 seconds** during an incident alert | Asks the game to **restart the mission**. The restart icon fills up while you hold. Single-player and co-op **host** only. |
 | **Hold F9, then let go early** | Cancels the restart. The alert stays up and you can try again. |
 
-When enabled, restart is **always manual**. The mod never restarts anything by itself. With the default hold duration, it takes a deliberate three-second hold, and:
+Restart is **always manual**. The mod never restarts anything by itself. With the default hold duration, it takes a deliberate three-second hold, and:
 
 - Holding F9 *before* an alert appears can't trigger it. Let go of F9 first, then hold it again.
 - If you're a client in someone else's co-op game, you only get dismiss. The restart icon doesn't show.
-- **Restart is experimental.** It calls the game's own restart function, which I've tested with a simulator but **not yet in a real mission**. Treat it as "should work" rather than "does work." Don't try it during a run you care about.
-- Leave `"RESTART_ENABLED": false` to keep restart off, or set it back to `false` after testing.
+- **It calls the game's own restart function.** It has worked in my live play as co-op host: a teammate died, the alert appeared, holding F9 restarted the lobby, the score reset, and the next attempt could still earn an S rank. That's limited testing (one person, one setup), so it's still marked experimental.
+- Prefer no restart button? Set `"RESTART_ENABLED": false`. Tapping F9 still dismisses alerts.
 
 Both keys are editable, and there are no modifier settings. To stop loading the
 mod entirely, disable it in `mods.txt` (see [Uninstalling](#uninstalling)).
@@ -242,12 +242,13 @@ To change something, close the game, open `config.json` in Notepad, edit and sav
 
 See **[CONFIG.md](CONFIG.md)** for every field, its default, allowed range and a plain-language explanation. `ACTION_KEY`, `SCALE`, `WIDTH`, `CENTER_OFFSET` and the switches inside `TRIGGERS` are good places to start.
 
-**Your settings survive updates.** Neither the installer nor the release ZIP replaces `config.json`. An older config can omit newly added settings: those fields use the current defaults. Invalid values fall back to their defaults with a `config warning: FIELD_NAME` message in `UE4SS.log`; the file stays untouched so you can fix it. Broken JSON uses all defaults for that session instead of preventing the mod from loading.
+**Your settings survive updates.** Neither the installer nor the release ZIP replaces `config.json`. An older config can omit newly added settings: those fields use the current defaults. Invalid values fall back to their defaults with a `config warning: FIELD_NAME` message in `UE4SS.log`; the file stays untouched so you can fix it. Broken JSON uses defaults with restart disabled for that session instead of preventing the mod from loading.
 
-Missing or invalid `RESTART_ENABLED` values, unreadable files and broken JSON leave
-restart **off**. An existing valid `"RESTART_ENABLED": true` remains enabled through
-updates, including files generated by older versions that defaulted to true. Set
-it to `false` yourself if you want to turn it off; updates do not rewrite your choices.
+A missing `RESTART_ENABLED` field in an otherwise valid config uses the default,
+which is **on**. An invalid value, unreadable file or broken JSON leaves restart
+**off** for that session and logs a warning. Your valid choice, `true` or `false`, is kept through updates,
+and updates do not rewrite your file. If you installed an earlier 0.5.x version, its
+`config.json` may already say `"RESTART_ENABLED": false`. That stays off until you change it to `true`.
 
 If you customized an older version's `main.lua`, transfer those values once from your old script or installer backup into the generated JSON. Old Lua code is not automatically imported. Future updates no longer require this step.
 
@@ -258,7 +259,7 @@ I'd rather you hear these from me:
 - **It's a young mod with little real-world playtime.** The core detection worked in-game on an early version and hasn't changed since. But I've only played it a bit, in a few situations.
 - **Visual verification is partial.** In-game screenshots at 1920×1080 show readable alerts in normal lighting and night vision, plus solid hold progress with no obvious bottom gap. Full completion and other resolutions still need visual checks. Long mixed-incident descriptions can wrap awkwardly; one capture leaves "failed" alone on its second line.
 - **Resolutions are checked on paper only.** I checked layout math for 1920x1080, 2560x1440 and 3440x1440 at a few UI scales, but not by looking at the game at each one. Unusual aspect ratios haven't been tested. If it looks off for you, `SCALE`, `WIDTH` and `CENTER_OFFSET` can help, and please report it.
-- **Restart is unverified in a real game** (see [Controls](#controls)).
+- **Restart has had limited live testing.** It worked as co-op host after a teammate's death, and a later attempt could still earn an S rank. Other situations, such as single-player, haven't been checked in detail (see [Controls](#controls)).
 - **The detail on an alert is basic.** Single-category alerts can show a player/objective name and a count; mixed alerts show counts by category. If there are too many categories to fit, "+N types" indicates the remaining categories. Different player/objective/penalty names can be combined, so check the log for full details. It can't tell you *which* civilian, or who shot them.
 - **The mod estimates, it doesn't know.** There's no official "you've lost S rank" signal to read, so the mod applies the standard rules to the numbers the game exposes. A quiet screen isn't a guarantee, and edge cases (special scripted exceptions, for instance) may be wrong.
 - **Co-op:** every player who wants alerts needs their own install. The mod only sees data the game shares with each player. Continuing alerts after death is implemented but still awaiting native verification; starting the mod directly in spectator view is unsupported.
@@ -268,9 +269,10 @@ I'd rather you hear these from me:
 - **It has crashed the game once.** The early version crashed in testing. That was traced to one specific call and removed in 0.1.1, but a fix for one crash isn't proof there are no others. If it happens to you, please report it.
 - **If you reload mods mid-mission** with a UE4SS hot reload, the mod forgets what it already told you. Restart the game if you want a clean state.
 
-The mod makes no direct save-file writes or scoring edits. If you enable restart
-and deliberately request one, the game handles the restart and any resulting
-score resets or save behavior; those side effects have not been verified in a live mission.
+The mod makes no direct save-file writes or scoring edits. If you
+deliberately request a restart, the game handles the restart and any resulting
+score reset or save behavior. In my live play the score reset and a later attempt
+could still earn an S rank. I haven't looked at what a restart does to save files specifically.
 
 ## Reporting a bug
 
@@ -316,7 +318,7 @@ python tests/package_spec.py
 ```
 
 The tests use simulated game objects and isolated folders; they don't need the game
-or change your installed mods. The package check builds `dist/SRankAlert-0.5.3.zip`
+or change your installed mods. The package check builds `dist/SRankAlert-0.5.4.zip`
 and checks its contents and reproducibility. `python tools/package.py` builds the
 ZIP by itself. Build output stays out of Git.
 
@@ -328,8 +330,8 @@ release after all checks pass. In-game appearance and behavior still need live
 checks; CI can't establish those.
 
 Release names use `vMAJOR.MINOR.PATCH` tags and `SRankAlert-MAJOR.MINOR.PATCH.zip`
-downloads. For this release, the tag is `v0.5.3`, the title is **SRankAlert v0.5.3**,
-and the asset is `SRankAlert-0.5.3.zip`. The workflow rejects a tag that disagrees
+downloads. For this release, the tag is `v0.5.4`, the title is **SRankAlert v0.5.4**,
+and the asset is `SRankAlert-0.5.4.zip`. The workflow rejects a tag that disagrees
 with the runtime version and verifies that every packaged file matches the tagged
 source. Release notes come from that version's changelog entry. Future releases
 use the same process: update the version and changelog, commit, then push the

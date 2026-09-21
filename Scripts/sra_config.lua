@@ -5,7 +5,7 @@ local M = {}
 local DEFAULTS = {
     ACTION_KEY = "F9",         -- Unreal key name; tap dismiss, hold restart
     TOGGLE_KEY = "F8",         -- toggle alerts in a mission; empty disables this shortcut
-    RESTART_ENABLED = false,    -- experimental, host only; requires an explicit opt-in
+    RESTART_ENABLED = true,     -- host only; needs a deliberate hold. false leaves dismiss only
     RESTART_HOLD_SECONDS = 3,
     DISMISS_TAP_SECONDS = 0.3, -- longer releases cancel hold, keeping alert visible
     SHOW_HOLD_PROGRESS = true,
@@ -107,6 +107,15 @@ local function copy(value)
 end
 function M.defaults() return copy(DEFAULTS) end
 
+-- A damaged/unreadable file must not turn an existing opt-out back on.
+-- Freshly generated configs still use DEFAULTS, including restart enabled.
+local function failureDefaults(log)
+    local result = M.defaults()
+    result.RESTART_ENABLED = false
+    log("config warning: RESTART_ENABLED disabled because config.json could not be loaded reliably")
+    return result
+end
+
 local function warn(log, field, reason)
     log("config warning: " .. field .. " " .. reason .. "; using default")
 end
@@ -159,6 +168,9 @@ local function validated(values, log)
                 else warn(log,key,"must be a JSON object") end
             elseif validValue(key,value,default) then
                 result[key] = COLORS[key] and value:upper() or value
+            elseif key=="RESTART_ENABLED" then
+                result[key] = false
+                log("config warning: RESTART_ENABLED must be true or false; restart disabled for this session")
             else warn(log,key,"has the wrong type, format, or range (see CONFIG.md)") end
         end
     end
@@ -196,7 +208,7 @@ end
 local function loadConfig(log, path)
     if not path then
         warn(log,"config.json","path could not be resolved from the mod's Scripts folder")
-        return M.defaults()
+        return failureDefaults(log)
     end
     local text, message, code = readFile(path)
     if not text and code==2 then -- ENOENT: missing file, not an unreadable existing file.
@@ -207,13 +219,13 @@ local function loadConfig(log, path)
         local file, writeError = io.open(path,"wb")
         if not file then
             warn(log,"config.json","could not be created at " .. path .. ": " .. tostring(writeError))
-            return M.defaults()
+            return failureDefaults(log)
         end
         local written, failure = file:write(encoded)
         local closed, closeError = file:close()
         if not written or not closed then
             warn(log,"config.json","could not be saved at " .. path .. ": " .. tostring(failure or closeError))
-            return M.defaults()
+            return failureDefaults(log)
         end
         log("config created with defaults: " .. path)
         -- Read the new file through exactly the same path as subsequent launches.
@@ -221,14 +233,14 @@ local function loadConfig(log, path)
     end
     if not text then
         warn(log,"config.json","could not be read at " .. path .. ": " .. tostring(message) .. " (existing file left unchanged)")
-        return M.defaults()
+        return failureDefaults(log)
     end
     -- Accept the UTF-8 marker that some Windows editors add, without modifying the file.
     text = text:gsub("^\239\187\191", "")
     local decoded, position, decodeError = json.decode(text,1,json.null)
     if decodeError or not object(decoded) or text:sub(position or 1):find("%S") then
         warn(log,"config.json","is invalid: " .. tostring(decodeError or "expected one JSON object") .. " (file left unchanged)")
-        return M.defaults()
+        return failureDefaults(log)
     end
     local config = validated(decoded,log)
     log("config loaded: " .. path)
@@ -240,6 +252,6 @@ function M.load(log, path)
     local ok, result = pcall(loadConfig, log, path or configPath())
     if ok then return result end
     warn(log,"config.json","could not be loaded: " .. tostring(result) .. " (existing file left unchanged)")
-    return M.defaults()
+    return failureDefaults(log)
 end
 return M

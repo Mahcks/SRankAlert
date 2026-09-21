@@ -1,14 +1,13 @@
 # Editing your settings
 
-Settings reference for version 0.5.3.
+Settings reference for version 0.5.4.
 
 Want a different key, a bigger alert, or no restart button? Start with
 [Settings most people will want to change](#settings-most-people-will-want-to-change).
 You can leave the rest alone. For a worked example before installing, see
 [config.example.json](config.example.json) in the repo: it uses F11, a slightly
-larger and higher alert, and warnings for civilian injuries. Restart stays off;
-its four-second hold setting only takes effect if you explicitly enable restart.
-That last option is off by default because its S-rank effect is unverified.
+larger and higher alert, a four-second restart hold, and warnings for civilian
+injuries. Those injury warnings are off by default because their S-rank effect is unverified.
 
 Start the game once and SRankAlert will make your settings file for you:
 `ReadyOrNot\Binaries\Win64\ue4ss\Mods\SRankAlert\config.json`. You'll find it beside
@@ -38,7 +37,7 @@ feels. You don't need to work through the whole file.
 |---|---|---|
 | `ACTION_KEY` | `"F9"` | One Unreal Engine key name for both dismiss and restart, such as `F9`, `F11`, `Home` or `ThumbMouseButton`. Use a letter first, then letters, digits or underscores, up to 64 characters. Names are case-sensitive to the game. The loader checks the format, not whether the game recognizes the name or another mod uses it. No chords such as `Ctrl+F9`; this mod has no modifier settings. Choose a key that is not a movement/combat control. |
 | `TOGGLE_KEY` | `"F8"` | Turns alerts off/on while the mod overlay is active (including after death), even with no alert showing. Same key-name format as `ACTION_KEY`, or `""` to disable the shortcut. Must differ from `ACTION_KEY`; a matching name disables the toggle with a log warning. Other mods may also use F8. Missing fields in older configs use F8 automatically. |
-| `RESTART_ENABLED` | `false` | `true` opts into the experimental host/single-player hold-to-restart action, which is still unverified in a live mission. Tap-to-dismiss works either way. Missing or invalid values leave restart off. |
+| `RESTART_ENABLED` | `true` | Turns on the host/single-player hold-to-restart action (hold `ACTION_KEY` during an incident alert). In the author's live co-op play it restarted the mission, reset the score, and the next attempt could still earn an S rank. That's limited testing, so it's still marked experimental. `false` removes it, leaving dismiss only. Tap-to-dismiss works either way. A missing field uses `true`; an invalid value disables restart for that session and logs a warning. |
 | `RESTART_HOLD_SECONDS` | `3` | Seconds to hold before requesting restart; 1–5. Host/single-player only. |
 | `SCALE` | `1` | Scales the entire alert; 0.5–3. Try this first if everything looks too small. |
 | `START_ENABLED` | `true` | Whether alerts start on at game launch. F8 (or `TOGGLE_KEY`) can change this for the current session without rewriting the file. While off, incident popups/sounds are muted but monitoring and event logging continue. |
@@ -182,7 +181,6 @@ shows the full structure if you'd rather see everything together.
 ```json
 {
   "ACTION_KEY": "F11",
-  "RESTART_ENABLED": false,
   "SCALE": 1.25,
   "TRIGGERS": {
     "CIVILIAN_INJURED": true
@@ -192,13 +190,15 @@ shows the full structure if you'd rather see everything together.
 
 If you mistype a value, you haven't ruined the mod. That setting uses its default
 and leaves a `config warning: FIELD_NAME` message in `ue4ss\UE4SS.log` to help you
-find it. If the JSON itself is broken, the mod uses all defaults for that session.
+find it. If the JSON itself is broken, the mod uses defaults with restart disabled for that session.
 It leaves your file alone so you can fix it. If it can't read the file or create
 it on first run, it also logs the problem and carries on with defaults.
 
-Those defaults keep restart off. An existing valid `"RESTART_ENABLED": true`
-still works and survives updates, even if an older version generated it for you.
-Set it to `false` to turn it off; the installer does not change existing settings.
+Fresh configs and a missing `RESTART_ENABLED` field in a valid file default to on.
+An invalid restart value or a file that cannot be loaded reliably leaves restart
+off for that session, with a warning. Your own valid `"RESTART_ENABLED"` choice, `true` or
+`false`, survives updates; the installer does not change existing settings. If an
+earlier 0.5.x version generated your file with `false`, it stays off until you change it.
 
 Coming from an older version that kept settings in `main.lua`? Keep your old
 script or the installer's backup, launch once to create JSON, then copy over your

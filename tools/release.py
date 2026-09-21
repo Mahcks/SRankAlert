@@ -38,8 +38,8 @@ def prepare(tag, artifact_dir, notes_file):
         f"[Installation guide]({repo}/blob/{tag}/README.md#installing) · "
         f"[Settings guide]({repo}/blob/{tag}/CONFIG.md)\n\n"
         "## Changes\n\n" + section.group(1).strip() + "\n\n"
-        "Restart remains experimental and off by default. Automated checks do not establish "
-        "in-game rendering or restart save/score behavior.\n\n"
+        "Hold-to-restart is on by default and has had limited live testing (set `RESTART_ENABLED` "
+        "to `false` for dismiss only). Automated checks do not establish in-game rendering.\n\n"
         f"SHA-256 (`{archive_path.name}`):\n```text\n{sha256(archive_path.read_bytes()).hexdigest()}\n```\n"
     )
     Path(notes_file).write_text(notes, encoding="utf-8")

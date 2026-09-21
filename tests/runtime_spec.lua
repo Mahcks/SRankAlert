@@ -442,7 +442,7 @@ local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
     mode.RestartGame=function() engine(); restarts=restarts+1 end
     world.AuthorityGameMode=mode
     advance(40100)
-    if restartChoice ~= true then
+    if restartChoice == false or invalidConfig then
         assert(not shown():find("HOLD TO RESTART",1,true),"disabled restart hint appeared")
         assert(table.concat(logs,"\n"):find("restart disabled",1,true),"startup log misstates restart availability")
         held,heldSeconds=true,3.1; advance(40200)
@@ -452,10 +452,10 @@ local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
         dismiss(); assert(shown()=="","tap-to-dismiss stopped working with restart off")
         assert(invalidNameReads==0 and fullPathReads==0)
         print=realPrint
-        realPrint("runtime "..tier..": default/disabled/invalid config cannot restart; dismiss remains active")
+        realPrint("runtime "..tier..": restart turned off in config cannot restart; dismiss remains active")
         return
     end
-    assert(shown():find("HOLD TO RESTART",1,true),"opted-in restart hint missing")
+    assert(shown():find("HOLD TO RESTART",1,true),"enabled restart hint missing")
     held,heldSeconds=true,3.1; host=false; advance(40200)
     assert(restarts==0,"client restarted")
     held,heldSeconds=false,0; advance(40300)

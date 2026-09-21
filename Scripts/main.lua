@@ -1,4 +1,4 @@
--- SRankAlert 0.5.3 -- observational alerts with deliberate host restart control.
+-- SRankAlert 0.5.4 -- observational alerts with deliberate host restart control.
 local source, Diff, Toast, Queue = require("source"), require("diff"), require("toast"), require("queue")
 local Presentation = require("presentation")
 local input = require("controls").new()
@@ -299,7 +299,7 @@ local function attach(hud)
     attempt()
 end
 
-log("loaded v0.5.3; " .. _VERSION .. "; " .. CONFIG.ACTION_KEY .. " tap dismiss / " ..
+log("loaded v0.5.4; " .. _VERSION .. "; " .. CONFIG.ACTION_KEY .. " tap dismiss / " ..
     (CONFIG.RESTART_ENABLED and "hold host restart enabled (experimental)" or "restart disabled"))
 log(CONFIG.TOGGLE_KEY ~= "" and (CONFIG.TOGGLE_KEY .. " toggles alerts in missions; starting " .. (enabled and "ON" or "OFF"))
     or ("alert toggle shortcut disabled; starting " .. (enabled and "ON" or "OFF")))

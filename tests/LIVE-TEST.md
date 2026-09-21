@@ -1,4 +1,4 @@
-# 0.5.3 live release checks
+# 0.5.4 live release checks
 
 This is the current checklist, replacing the older per-version test instructions.
 Unchecked items are pending. Simulated tests do not count as a live pass.
@@ -12,9 +12,12 @@ Record the game build, UE4SS build, resolution and UI scale with each result.
   bottom-edge adjustment.
 - [x] Installer ran against the real game folder with the game closed; backups
   and copied-file hashes verified. First native load generated persistent JSON.
+- [x] As co-op host, a teammate died, the alert appeared and holding F9 restarted the
+  lobby; the score reset and the next attempt still earned an S rank (author's live
+  play; mod version and config not recorded).
 
-These observations predate the prepared 0.5.3 ZIP. They do not establish a complete
-current-release pass.
+These observations do not establish a complete 0.5.4 release pass. The co-op
+report did not record a mod version or config; do not infer them.
 
 ## Controls and mission behavior
 
@@ -24,9 +27,8 @@ current-release pass.
   then deliberately complete a fresh hold. Confirm mission restart and no repeat.
 - [ ] Repeat the death transition as a co-op client: dismiss works, restart is
   unavailable. Check F8, menu clicks, and that the overlay clears on mission exit.
-- [ ] On a fresh config, confirm restart defaults off and the host sees only dismiss.
-  Enable `RESTART_ENABLED` explicitly in a disposable test config before the restart
-  and hold-fill checks below. Restore it to false after testing if desired.
+- [ ] On a fresh config, confirm restart defaults on and the host sees both tiles.
+  Use a disposable mission for the restart and hold-fill checks below.
 - [ ] Check F9 against the base game's default controls and any custom bindings.
   Saved bindings inspected locally have no F9 mapping; this is not proof of defaults.
 - [ ] With an alert showing, tap F9 for no more than about 0.3 seconds and release:
@@ -41,7 +43,7 @@ current-release pass.
 - [ ] In a disposable single-player mission, deliberately hold for three seconds;
   verify a fresh mission starts and the request does not repeat. Then separately
   verify as co-op host. Do not perform these tests during a run you care about.
-- [ ] With `RESTART_ENABLED` false, only dismiss is offered to the host.
+- [ ] With `"RESTART_ENABLED": false` in config.json, only dismiss is offered to the host.
 - [ ] Leave an incident visible for 30 seconds; it remains. Trigger multiple
   incident groups: the current alert updates in place; full events remain in the log.
 - [ ] Startup/status notices expire after 5.5 seconds, including fades. Mission
@@ -61,5 +63,6 @@ current-release pass.
   must never be presented as a final S-rank guarantee. Check the death/spectator
   transition separately; do not infer success from normal character-HUD captures.
 
-Restart is still unverified in a live mission. Keep the README's warning until
-the relevant checks above have evidence; do not mark them passed from mocks.
+Restart has only limited live evidence (the co-op host case above). Single-player,
+save-file effects and the checks above still need evidence; do not mark them passed
+from mocks.

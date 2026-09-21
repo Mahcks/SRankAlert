@@ -68,7 +68,7 @@ function Read-Host {
     first, logs = load_config()
     generated = json.loads(config_path.read_text(encoding="utf-8"))
     assert first["ACTION_KEY"] == generated["ACTION_KEY"] == "F9"
-    assert first["RESTART_ENABLED"] is False and generated["RESTART_ENABLED"] is False
+    assert first["RESTART_ENABLED"] is True and generated["RESTART_ENABLED"] is True
     assert any("config created with defaults:" in line for line in logs)
     assert any("config loaded:" in line for line in logs)
 
@@ -109,11 +109,12 @@ function Read-Host {
     assert defaults["RESTART_ENABLED"] is False, "Broken JSON enabled restart"
     assert fingerprint(config_path) == corrupt_before
 
-    # Existing explicit opt-ins also survive updates; changing defaults is not a migration.
-    config_path.write_text('{"RESTART_ENABLED":true}', encoding="utf-8")
-    opted_in_before = fingerprint(config_path)
-    install()
-    opted_in, logs = load_config()
-    assert opted_in["RESTART_ENABLED"] is True and fingerprint(config_path) == opted_in_before
+    # Explicit choices survive updates either way; changing defaults is not a migration.
+    for choice in (True, False):
+        config_path.write_text('{"RESTART_ENABLED":%s}' % str(choice).lower(), encoding="utf-8")
+        chosen_before = fingerprint(config_path)
+        install()
+        chosen, logs = load_config()
+        assert chosen["RESTART_ENABLED"] is choice and fingerprint(config_path) == chosen_before
 
 print("lifecycle: fresh installed config generation, edited settings surviving real installer update, invalid-field fallback/logging, corrupt-file preservation passed")

@@ -22,7 +22,7 @@ end
 -- A first load creates readable JSON with every default, then reads that file.
 local fresh=Config.load(log,path)
 local disk,_,err=json.decode(read(),1,json.null)
-assert(not err and disk.ACTION_KEY=="F9" and disk.RESTART_ENABLED==false)
+assert(not err and disk.ACTION_KEY=="F9" and disk.RESTART_ENABLED==true)
 local function same(a,b)
     if type(a)~="table" then assert(a==b); return end
     for key,value in pairs(a) do same(value,b[key]) end
@@ -45,13 +45,16 @@ assert(config.TRIGGERS.CIVILIAN_INJURED==true and config.TRIGGERS.PLAYER_DIED==f
 assert(config.TRIGGERS.SUSPECT_KILLED==true and config.POLL_MS==350 and #logs==1)
 same(config,Config.load(log,path)) -- another launch preserves all edits
 
--- Restart requires a valid, explicit opt-in. Broken/missing settings cannot enable it.
+-- Fresh/missing settings default on; invalid values and broken files disable restart.
+config=loadUnchanged('{"RESTART_ENABLED":false}')
+assert(config.RESTART_ENABLED==false,"explicit opt-out was lost")
 config=loadUnchanged('{"RESTART_ENABLED":true}')
-assert(config.RESTART_ENABLED==true,"explicit opt-in was lost")
-for _, text in ipairs({'{}', '{"RESTART_ENABLED":false}', '{"RESTART_ENABLED":"true"}',
-    '{"RESTART_ENABLED":1}', '{"RESTART_ENABLED":null}', '{"RESTART_ENABLED":true, broken'}) do
+assert(config.RESTART_ENABLED==true,"explicit true was lost")
+config=loadUnchanged('{}'); assert(config.RESTART_ENABLED==true)
+for _, text in ipairs({ '{"RESTART_ENABLED":"false"}', '{"RESTART_ENABLED":0}',
+    '{"RESTART_ENABLED":null}', '{"RESTART_ENABLED":false, broken'}) do
     config=loadUnchanged(text)
-    assert(config.RESTART_ENABLED==false,"invalid/missing config enabled restart")
+    assert(config.RESTART_ENABLED==false,"invalid config enabled restart")
 end
 
 -- Older files remain readable and untouched; removed options cannot re-enter the active config.
@@ -74,7 +77,8 @@ assert(table.concat(logs,"\n"):find("unknown field FONT_CONTROL_FACE",1,true))
 -- Exercise every field's type validation, including all nested switches.
 for field,default in pairs(Config.defaults()) do
     config=loadUnchanged(json.encode({[field]=json.null}))
-    same(default,config[field]); warning(field)
+    if field=="RESTART_ENABLED" then assert(config[field]==false) else same(default,config[field]) end
+    warning(field)
 end
 for field,default in pairs(Config.defaults().TRIGGERS) do
     config=loadUnchanged(json.encode({TRIGGERS={[field]=0}}))
@@ -99,7 +103,9 @@ config=loadUnchanged('\239\187\191{"ACTION_KEY":"F12"}')
 assert(config.ACTION_KEY=="F12")
 for _,text in ipairs({'{ broken','{"SCALE":','[]','null','true','{} trailing','{"TRIGGERS":[]}','{"TRIGGERS":null}',string.rep(' ',256*1024+1)}) do
     config=loadUnchanged(text)
-    same(config,Config.defaults())
+    local expected=Config.defaults()
+    if not text:find("TRIGGERS",1,true) then expected.RESTART_ENABLED=false end
+    same(config,expected)
     assert(#logs>0 and table.concat(logs,"\n"):find("config warning:",1,true))
 end
 config=loadUnchanged('{}'); config.TRIGGERS.PLAYER_DIED=false
@@ -111,7 +117,7 @@ local modes={}
 io.open=function(_,mode) modes[#modes+1]=mode; return nil,"Permission denied",13 end
 logs={}; config=Config.load(log,path)
 io.open=realOpen
-same(config,Config.defaults()); warning("config.json")
+local expected=Config.defaults(); expected.RESTART_ENABLED=false; same(config,expected); warning("config.json")
 assert(#modes==1 and modes[1]=="rb","attempted to overwrite an unreadable file")
 
 -- First-run write failures fall back without taking down the mod.
@@ -120,7 +126,7 @@ io.open=function(_,mode)
     return nil,"Permission denied",13
 end
 logs={}; config=Config.load(log,path); io.open=realOpen
-same(config,Config.defaults()); warning("config.json")
+local expected=Config.defaults(); expected.RESTART_ENABLED=false; same(config,expected); warning("config.json")
 
 -- UE4SS supplies an @filename chunk name. Resolve Windows/Unix-style paths
 -- relative to the module, independent of the process's working directory.
