@@ -15,6 +15,8 @@ Record the game build, UE4SS build, resolution and UI scale with each result.
 - [x] As co-op host, a teammate died, the alert appeared and holding F9 restarted the
   lobby; the score reset and the next attempt still earned an S rank (author's live
   play; mod version and config not recorded).
+- [x] In single-player, holding F9 during an incident alert restarted the mission
+  (author's live play; mod version, config and repeat/no-repeat behavior not recorded).
 
 These observations do not establish a complete 0.5.4 release pass. The co-op
 report did not record a mod version or config; do not infer them.
@@ -63,6 +65,6 @@ report did not record a mod version or config; do not infer them.
   must never be presented as a final S-rank guarantee. Check the death/spectator
   transition separately; do not infer success from normal character-HUD captures.
 
-Restart has only limited live evidence (the co-op host case above). Single-player,
-save-file effects and the checks above still need evidence; do not mark them passed
+Restart has only limited live evidence (the co-op host and single-player cases above).
+Save-file effects and the checks above still need evidence; do not mark them passed
 from mocks.

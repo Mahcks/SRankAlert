@@ -228,7 +228,7 @@ Restart is **always manual**. The mod never restarts anything by itself. With th
 
 - Holding F9 *before* an alert appears can't trigger it. Let go of F9 first, then hold it again.
 - If you're a client in someone else's co-op game, you only get dismiss. The restart icon doesn't show.
-- **It calls the game's own restart function.** It has worked in my live play as co-op host: a teammate died, the alert appeared, holding F9 restarted the lobby, the score reset, and the next attempt could still earn an S rank. That's limited testing (one person, one setup), so it's still marked experimental.
+- **It calls the game's own restart function.** It has worked in my live play in both single-player and as co-op host. In co-op, a teammate died, the alert appeared, holding F9 restarted the lobby, the score reset, and the next attempt could still earn an S rank. That's limited testing (one person, one setup), so it's still marked experimental.
 - Prefer no restart button? Set `"RESTART_ENABLED": false`. Tapping F9 still dismisses alerts.
 
 Both keys are editable, and there are no modifier settings. To stop loading the
@@ -259,7 +259,7 @@ I'd rather you hear these from me:
 - **It's a young mod with little real-world playtime.** The core detection worked in-game on an early version and hasn't changed since. But I've only played it a bit, in a few situations.
 - **Visual verification is partial.** In-game screenshots at 1920×1080 show readable alerts in normal lighting and night vision, plus solid hold progress with no obvious bottom gap. Full completion and other resolutions still need visual checks. Long mixed-incident descriptions can wrap awkwardly; one capture leaves "failed" alone on its second line.
 - **Resolutions are checked on paper only.** I checked layout math for 1920x1080, 2560x1440 and 3440x1440 at a few UI scales, but not by looking at the game at each one. Unusual aspect ratios haven't been tested. If it looks off for you, `SCALE`, `WIDTH` and `CENTER_OFFSET` can help, and please report it.
-- **Restart has had limited live testing.** It worked as co-op host after a teammate's death, and a later attempt could still earn an S rank. Other situations, such as single-player, haven't been checked in detail (see [Controls](#controls)).
+- **Restart has had limited live testing.** It worked as co-op host after a teammate's death, and a later attempt could still earn an S rank. It has also worked in single-player. Beyond those two cases it hasn't been checked in detail (see [Controls](#controls)).
 - **The detail on an alert is basic.** Single-category alerts can show a player/objective name and a count; mixed alerts show counts by category. If there are too many categories to fit, "+N types" indicates the remaining categories. Different player/objective/penalty names can be combined, so check the log for full details. It can't tell you *which* civilian, or who shot them.
 - **The mod estimates, it doesn't know.** There's no official "you've lost S rank" signal to read, so the mod applies the standard rules to the numbers the game exposes. A quiet screen isn't a guarantee, and edge cases (special scripted exceptions, for instance) may be wrong.
 - **Co-op:** every player who wants alerts needs their own install. The mod only sees data the game shares with each player. Continuing alerts after death is implemented but still awaiting native verification; starting the mod directly in spectator view is unsupported.
