@@ -1,0 +1,118 @@
+name: Bug report
+description: Something isn't working right — a crash, a wrong alert, a visual glitch, etc.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. The more of the below you can fill in, the faster this gets fixed — especially the log, which usually tells us more than a description alone can.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect instead?
+      placeholder: e.g. "The alert showed FRIENDLY TEAM KILL but I only injured a suspect. I expected no alert, or a lower-severity one."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: log-privacy-check
+    attributes:
+      label: Before you paste the log
+      description: SRankAlert's log can include player names from your session.
+      options:
+        - label: I checked UE4SS.log for player names and removed/redacted any before posting below.
+          required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: UE4SS.log
+      description: |
+        Copy the log **before relaunching the game** — it's overwritten on next start. Found at `ReadyOrNot\Binaries\Win64\ue4ss\UE4SS.log`.
+        At minimum, include every line containing `[SRankAlert]`, plus a few lines before/after the problem. Turning on `VERBOSE` in your config first gives more detail.
+      placeholder: Paste the relevant log lines here (as text, not a screenshot, so they can be searched/copied).
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: game-version
+    attributes:
+      label: Game version / build number
+      placeholder: e.g. build 24942528
+    validations:
+      required: true
+
+  - type: dropdown
+    id: store
+    attributes:
+      label: Store
+      options:
+        - Steam
+        - Other (please note which, in "What happened")
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ue4ss-build
+    attributes:
+      label: UE4SS build
+      description: "Not sure which? Check: does `ReadyOrNot\\Binaries\\Win64\\ue4ss\\` exist as a folder (experimental), or is `UE4SS.dll` sitting directly in `Win64\\` (stable)?"
+      options:
+        - Experimental (has a ue4ss\ subfolder)
+        - Stable (UE4SS.dll directly in Win64\)
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: session-type
+    attributes:
+      label: Session type
+      options:
+        - Solo
+        - Co-op host
+        - Co-op client
+    validations:
+      required: true
+
+  - type: input
+    id: mission
+    attributes:
+      label: Mission (if relevant)
+      placeholder: e.g. Twisted Nerve
+
+  - type: input
+    id: resolution
+    attributes:
+      label: Screen resolution and UI scale
+      description: Especially important for anything visual (alert position, text size, legibility).
+      placeholder: e.g. 2560x1440, UI scale 1.0
+
+  - type: textarea
+    id: other-mods
+    attributes:
+      label: Other mods installed, and any custom key bindings
+      placeholder: List other UE4SS/pak mods you have active, and note if you've remapped anything relevant (like your reload key).
+
+  - type: textarea
+    id: crash-context
+    attributes:
+      label: For a crash — CrashContext.runtime-xml
+      description: |
+        Found in the newest folder under `%LOCALAPPDATA%\ReadyOrNot\Saved\Crashes`. Attach the file directly (drag it into this box) rather than pasting its contents.
+      placeholder: Attach the file, or write "not a crash" / "N/A" if this doesn't apply.
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: A screenshot helps a lot for anything visual — drag an image directly into this box.
+
+  - type: input
+    id: config-changes
+    attributes:
+      label: Any non-default config.json settings?
+      placeholder: e.g. ACTION_KEY changed to F11, SCALE 1.25 — or "default config"

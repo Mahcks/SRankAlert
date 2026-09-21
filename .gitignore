@@ -1,0 +1,13 @@
+.venv/
+research/
+dist/
+__pycache__/
+tools/.deploy-test/
+/config.json
+
+# Local research notes and native test captures are not part of the public project.
+/API-NOTES.md
+/verification/
+
+# Keep the Nexus listing draft local rather than publishing it with the source.
+/NEXUS-DESCRIPTION.txt

@@ -1,0 +1,2 @@
+# Keep source bytes stable across Windows checkouts, including the vendored library.
+* text=auto eol=lf

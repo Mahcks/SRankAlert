@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Feature request or idea
+    url: https://github.com/Mahcks/SRankAlert/issues/new
+    about: Have a suggestion rather than a bug? Describe your idea in an issue.
+  - name: General UE4SS help (not specific to this mod)
+    url: https://docs.ue4ss.com/
+    about: For UE4SS install/setup questions unrelated to SRankAlert itself.
