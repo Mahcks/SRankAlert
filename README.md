@@ -9,6 +9,20 @@ Two things to know up front:
 - It's an early warning, not a judge. If it stays quiet, that does **not** promise you an S rank. It only watches for the things listed under [What you'll see](#what-youll-see).
 - By default, it reads scoring data and shows alerts. An experimental mission-restart action is available only if you enable it in your settings; see [Controls](#controls).
 
+## Screenshots
+
+Here's SRankAlert v0.5.2 in-game at 1920×1080. These shots have the optional experimental restart action enabled; with default settings, you'll see only the dismiss tile.
+
+![A Friendly Team Kill alert outside a storefront, with F9 dismiss and a partially filled hold-to-restart tile.](docs/images/friendly-team-kill.jpg)
+
+A team-kill penalty appears above the crosshair, with the controls underneath.
+
+![A Suspect Killed alert under night vision showing Count: 2 and red hold progress in the restart tile.](docs/images/suspect-killed-hold-progress.jpg)
+
+Repeated suspect kills update the same alert with a count. The red fill shows a restart hold in progress.
+
+You can open either image at full size. If you're reading a downloaded copy of this guide, the screenshots are also in the [online README](https://github.com/Mahcks/SRankAlert#screenshots).
+
 ## Why does this need UE4SS?
 
 The game doesn't offer a way to ask "did the score just change?" from the outside. To see live scoring, a mod has to reach into the game while it runs.
@@ -238,7 +252,7 @@ If you customized an older version's `main.lua`, transfer those values once from
 I'd rather you hear these from me:
 
 - **It's a young mod with little real-world playtime.** The core detection worked in-game on an early version and hasn't changed since. But I've only played it a bit, in a few situations.
-- **Visual verification is partial.** The Roboto alphabet specimen and the solid, progressing fill were confirmed by the tester in-game. The latest bottom-edge fill correction still needs a near-full screenshot. Current alert legibility, HUD overlap and bright/dark-scene comparisons also remain pending; automated layout checks cannot establish those.
+- **Visual verification is partial.** In-game screenshots at 1920×1080 show readable alerts in normal lighting and night vision, plus solid hold progress with no obvious bottom gap. Full completion and other resolutions still need visual checks. Long mixed-incident descriptions can wrap awkwardly; one capture leaves "failed" alone on its second line.
 - **Resolutions are checked on paper only.** I checked layout math for 1920x1080, 2560x1440 and 3440x1440 at a few UI scales, but not by looking at the game at each one. Unusual aspect ratios haven't been tested. If it looks off for you, `SCALE`, `WIDTH` and `CENTER_OFFSET` can help, and please report it.
 - **Restart is unverified in a real game** (see [Controls](#controls)).
 - **The detail on an alert is basic.** Single-category alerts can show a player/objective name and a count; mixed alerts show counts by category. If there are too many categories to fit, "+N types" indicates the remaining categories. Different player/objective/penalty names can be combined, so check the log for full details. It can't tell you *which* civilian, or who shot them.
