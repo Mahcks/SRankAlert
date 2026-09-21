@@ -2,7 +2,9 @@
 
 **A small warning that pops up mid-mission when something happens that can cost you an S rank in Ready or Not.**
 
-Kill a civilian, lose a human teammate, trip a penalty, fail an objective: a short message appears just above your crosshair so you know right away, instead of finding out at the debrief screen. Version 0.5.2 (prepared for release; not yet published).
+Kill a civilian, lose a human teammate, trip a penalty, fail an objective: a short message appears just above your crosshair so you know right away, instead of finding out at the debrief screen. Version 0.5.3.
+
+**[Download v0.5.3](https://github.com/Mahcks/SRankAlert/releases/download/v0.5.3/SRankAlert-0.5.3.zip)** · [Release notes](https://github.com/Mahcks/SRankAlert/releases/tag/v0.5.3) · [All versions](https://github.com/Mahcks/SRankAlert/releases)
 
 Two things to know up front:
 
@@ -35,7 +37,7 @@ If you get stuck on UE4SS itself, its [documentation](https://docs.ue4ss.com/ins
 
 ## Installing
 
-The public repository is [Mahcks/SRankAlert](https://github.com/Mahcks/SRankAlert). Version 0.5.2 is being prepared for publication; its ZIP and a Nexus Mods listing link are pending. Once published, download `SRankAlert-0.5.2.zip` from [GitHub Releases](https://github.com/Mahcks/SRankAlert/releases).
+Download **[SRankAlert-0.5.3.zip](https://github.com/Mahcks/SRankAlert/releases/download/v0.5.3/SRankAlert-0.5.3.zip)** from the [v0.5.3 release](https://github.com/Mahcks/SRankAlert/releases/tag/v0.5.3). For another version, open [Releases](https://github.com/Mahcks/SRankAlert/releases) and choose the named `SRankAlert-VERSION.zip` under that version's **Assets**. The automatic "Source code" downloads are for development; use the named mod ZIP to install.
 
 There are two ways to install it: let a small **install script** do the copying and the `mods.txt` edit for you, or do everything by hand. Either way, you do steps 0 to 2 yourself, because the script doesn't install UE4SS.
 
@@ -151,7 +153,7 @@ The easiest check is in-game: a brief **S-RANK ALERTS ACTIVE** message shortly a
 For a proper check, open `ReadyOrNot\Binaries\Win64\ue4ss\UE4SS.log` in Notepad (UE4SS starts a fresh one each time you launch the game) and search for `[SRankAlert]`. A healthy start looks roughly like this:
 
 ```
-[SRankAlert] loaded v0.5.2; ... F9 tap dismiss / restart disabled
+[SRankAlert] loaded v0.5.3; ... F9 tap dismiss / restart disabled
 [SRankAlert] game-thread route: ExecuteInGameThreadWithDelay
 [SRankAlert] character HUD observed; waiting for widget tree
 [SRankAlert] toast attached after 250ms; poll=350ms
@@ -184,7 +186,7 @@ Two more alerts exist but are **off by default**, because I couldn't confirm the
 
 Some things worth knowing:
 
-- **Incident alerts don't fade on their own.** Dismiss with F9, or they clear when you leave the mission or the game replaces the character HUD. More events update the same alert: repeated suspect kills keep **SUSPECT KILLED** with a count; mixed types show **MULTIPLE INCIDENTS** with a breakdown such as "2 suspects killed / 1 penalty: Friendly Team Kill". Counts cover what was recorded since the current alert began, not a total of unique actions: one action can also incur a penalty.
+- **Incident alerts don't fade on their own.** Dismiss with F9, or they clear when you leave the mission. Replacing the character HUD within the same mission preserves the alert. More events update the same alert: repeated suspect kills keep **SUSPECT KILLED** with a count; mixed types show **MULTIPLE INCIDENTS** with a breakdown such as "2 suspects killed / 1 penalty: Friendly Team Kill". Counts cover what was recorded since the current alert began, not a total of unique actions: one action can also incur a penalty.
 - **Startup and status notices** (like S-RANK ALERTS ACTIVE) disappear by themselves after about five and a half seconds.
 - **Missing data is reported as missing.** If the mod can't read something, it says so instead of assuming zero.
 - **Scoring rules have to be readable and marked official.** Otherwise, rank-related incident alerts are suppressed; human player deaths can still be reported. The incomplete-check notice explains that coverage is limited.
@@ -200,7 +202,9 @@ and event logging continue, so already observed incidents don't replay on enable
 
 The toggle lasts for the current game session, including mission changes. Your
 next launch uses `START_ENABLED` again; pressing F8 does not edit `config.json`.
-It requires an attached character HUD and does not work in menus or spectator view.
+It starts after the character HUD first appears. The mod's separate overlay is
+designed to keep alerts and controls available after death and while spectating;
+this new behavior still needs an in-game check. It does not start from menus alone.
 
 F8 is unassigned in the saved game bindings checked for development, but some
 other mods use it, including [Universal Weapon P.O.I Crosshair](https://www.nexusmods.com/readyornot/mods/8681).
@@ -257,7 +261,7 @@ I'd rather you hear these from me:
 - **Restart is unverified in a real game** (see [Controls](#controls)).
 - **The detail on an alert is basic.** Single-category alerts can show a player/objective name and a count; mixed alerts show counts by category. If there are too many categories to fit, "+N types" indicates the remaining categories. Different player/objective/penalty names can be combined, so check the log for full details. It can't tell you *which* civilian, or who shot them.
 - **The mod estimates, it doesn't know.** There's no official "you've lost S rank" signal to read, so the mod applies the standard rules to the numbers the game exposes. A quiet screen isn't a guarantee, and edge cases (special scripted exceptions, for instance) may be wrong.
-- **Co-op:** every player who wants alerts needs their own install. The mod only sees data the game shares with each player. Spectator view isn't supported.
+- **Co-op:** every player who wants alerts needs their own install. The mod only sees data the game shares with each player. Continuing alerts after death is implemented but still awaiting native verification; starting the mod directly in spectator view is unsupported.
 - **Other mods and game updates** can change what the mod can read.
 - **Turning off a trigger only stops its alerts.** The mod still reads the underlying data, so missing data for that category may still produce a coverage warning. Missing optional bonus/injury data is logged when detected, but is not comprehensively represented in the on-screen coverage notice.
 - **Very quick taps can be missed.** Input is sampled every 50 milliseconds, so a press and release entirely between samples may not dismiss the alert.
@@ -312,18 +316,21 @@ python tests/package_spec.py
 ```
 
 The tests use simulated game objects and isolated folders; they don't need the game
-or change your installed mods. The package check builds `dist/SRankAlert-0.5.2.zip`
+or change your installed mods. The package check builds `dist/SRankAlert-0.5.3.zip`
 and checks its contents and reproducibility. `python tools/package.py` builds the
 ZIP by itself. Build output stays out of Git.
 
 [GitHub Actions](.github/workflows/ci.yml) runs the same checks on Windows for pushes
 and pull requests, and can also be started from the Actions tab. A successful run
-keeps the tested ZIP as a downloadable artifact for 14 days. These builds aren't
-automatically published as releases. In-game appearance and behavior still need
-live checks; CI can't establish those.
+keeps the tested ZIP as a downloadable artifact for 14 days. Normal branch builds
+do not publish releases. Pushing a version tag publishes the tested ZIP as a GitHub
+release after all checks pass. In-game appearance and behavior still need live
+checks; CI can't establish those.
 
 Release names use `vMAJOR.MINOR.PATCH` tags and `SRankAlert-MAJOR.MINOR.PATCH.zip`
-downloads. For this prepared release, use tag `v0.5.2`, title **SRankAlert v0.5.2**,
-and `SRankAlert-0.5.2.zip`. The package test checks that the runtime log, README,
-config guide, changelog and ZIP version agree. Create the tag and GitHub release
-only after the pending live checks and release decisions are resolved.
+downloads. For this release, the tag is `v0.5.3`, the title is **SRankAlert v0.5.3**,
+and the asset is `SRankAlert-0.5.3.zip`. The workflow rejects a tag that disagrees
+with the runtime version and verifies that every packaged file matches the tagged
+source. Release notes come from that version's changelog entry. Future releases
+use the same process: update the version and changelog, commit, then push the
+matching `vMAJOR.MINOR.PATCH` tag. Document any remaining live-test limitations.

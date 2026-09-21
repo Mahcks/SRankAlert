@@ -6,6 +6,26 @@ milestones; their release dates were not recorded.
 
 ## Unreleased
 
+## 0.5.3 - 2026-09-21
+
+### Added
+
+- Versioned GitHub releases with a clearly named install ZIP and direct README
+  download links. Tag builds run the checks before publishing and reject version
+  mismatches or an artifact that differs from the tagged source.
+
+### Fixed
+
+- Alerts now use their own viewport widget instead of the character HUD, which
+  the game hides after the local player dies. Death alerts and the opted-in host
+  restart control can remain available through the death/spectator transition.
+- HUD replacement in the same world preserves the current alert and its counts.
+  The overlay uses its original local controller for input and is removed on world
+  change. It does not capture menu focus or enable restart for co-op clients.
+- Added regression coverage for HUD destruction before a death poll, removal of
+  viewport widgets, configured two-second holds, client dismissal and world cleanup.
+  Native rendering and death-screen input still need a live check.
+
 ## 0.5.2 (prepared; not yet published)
 
 ### Fixed

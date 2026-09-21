@@ -1,4 +1,4 @@
-# 0.5.2 live release checks
+# 0.5.3 live release checks
 
 This is the current checklist, replacing the older per-version test instructions.
 Unchecked items are pending. Simulated tests do not count as a live pass.
@@ -13,11 +13,17 @@ Record the game build, UE4SS build, resolution and UI scale with each result.
 - [x] Installer ran against the real game folder with the game closed; backups
   and copied-file hashes verified. First native load generated persistent JSON.
 
-These observations predate the prepared 0.5.2 ZIP. They do not establish a complete
+These observations predate the prepared 0.5.3 ZIP. They do not establish a complete
 current-release pass.
 
 ## Controls and mission behavior
 
+- [ ] With restart enabled as host, die while another teammate is alive. Confirm
+  the death alert and hold tile appear without first selecting spectate or Escape.
+  With a two-second config, hold for less than two seconds and release (no restart),
+  then deliberately complete a fresh hold. Confirm mission restart and no repeat.
+- [ ] Repeat the death transition as a co-op client: dismiss works, restart is
+  unavailable. Check F8, menu clicks, and that the overlay clears on mission exit.
 - [ ] On a fresh config, confirm restart defaults off and the host sees only dismiss.
   Enable `RESTART_ENABLED` explicitly in a disposable test config before the restart
   and hold-fill checks below. Restore it to false after testing if desired.
@@ -52,7 +58,8 @@ current-release pass.
 - [ ] Compare actual alerts in bright and dark scenes, including a red vignette.
   Confirm INCIDENT / WARNING / STATUS wording remains readable without color.
 - [ ] Verify the optional injury/bonus warning and incomplete-check notice; silence
-  must never be presented as a final S-rank guarantee. Spectator HUD is unsupported.
+  must never be presented as a final S-rank guarantee. Check the death/spectator
+  transition separately; do not infer success from normal character-HUD captures.
 
 Restart is still unverified in a live mission. Keep the README's warning until
 the relevant checks above have evidence; do not mark them passed from mocks.

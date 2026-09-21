@@ -4,7 +4,8 @@ local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
     for _, mod in ipairs({"source","diff","toast","queue","presentation"}) do package.loaded[mod]=nil end
     local time, scheduled, inGame, logs, allWidgets = 0, {}, false, {}, {}
     local invalidNameReads, fullPathReads = 0, 0
-    local key, dismiss, notify
+    local key, dismiss, notify, viewport
+    local factoryCalls = 0
     local held=false
     local toggleHeld=toggleCase ~= nil -- pre-held input must not toggle on attachment
     local polledKeys={}
@@ -54,6 +55,7 @@ local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
     local function owningPlayer()
         engine()
         local pc=object("Controller")
+        pc.GetWorld=function() engine(); return world end
         pc.IsInputKeyDown=function(_, key)
             engine(); polledKeys[key.KeyName]=true
             if key.KeyName=="F9" then return held end
@@ -95,9 +97,28 @@ local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
         return {hud}
     end
     FindFirstOf=function() engine() end
-    StaticFindObject=function(path) engine(); return object(path) end
+    StaticFindObject=function(path)
+        engine()
+        local found=object(path)
+        if path=="/Script/UMG.Default__WidgetBlueprintLibrary" then
+            found.Create=function(_,context,class,owner)
+                engine(); assert(context==owner and class:GetAddress()=="/Script/UMG.UserWidget")
+                factoryCalls=factoryCalls+1
+                viewport=object("Viewport "..factoryCalls)
+                viewport.SetVisibility=function(self,v) engine(); self.visibility=v end
+                viewport.IsInViewport=function(self) engine(); return self.onScreen==true end
+                viewport.AddToViewport=function(self,z) engine(); self.onScreen=true; self.z=z end
+                viewport.RemoveFromParent=function(self) engine(); self.onScreen=false end
+                viewport.PlaySound=hud.PlaySound
+                return viewport
+            end
+        end
+        return found
+    end
     StaticConstructObject=function(class,outer,n)
-        engine(); local w=object(n or ("Widget"..#allWidgets+1)); w.children={}; w.Font={Size=24,OutlineSettings={}}; w.WidgetStyle={BackgroundImage={TintColor={}},FillImage={TintColor={}}}
+        engine()
+        if class:GetAddress()=="/Script/UMG.Overlay" and outer==viewport.WidgetTree and not outer.RootWidget then return root end
+        local w=object(n or ("Widget"..#allWidgets+1)); w.outer=outer; w.children={}; w.Font={Size=24,OutlineSettings={}}; w.WidgetStyle={BackgroundImage={TintColor={}},FillImage={TintColor={}}}
         w.SetVisibility=function(self,v) engine(); self.visibility=v end
         w.SetHeightOverride=function(self,v) engine(); self.height=v end; w.SetIsMarquee=engine; w.SetFillColorAndOpacity=function(self,v) engine(); self.fillColor=v end;
         w.SetPercent=function(self,v) engine(); self.percent=v end;
@@ -147,7 +168,7 @@ local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
     if probe or invalidConfig or restartChoice ~= nil or toggleCase then
         local file=assert(io.open(configPath,"wb"))
         file:write(toggleCase and ('{"START_ENABLED":' .. tostring(toggleCase~="startoff") ..
-            ',"RESTART_ENABLED":true,"SOUND":true,"SOUND_PATH":"/Test/Sound","TOGGLE_KEY":"' ..
+            ',"RESTART_HOLD_SECONDS":' .. (toggleCase=="death" and '2' or '3') .. ',"RESTART_ENABLED":true,"SOUND":true,"SOUND_PATH":"/Test/Sound","TOGGLE_KEY":"' ..
             (toggleCase=="custom" and "F10" or "F8") .. '"}')
             or probe and '{"FONT_PROBE":true}'
             or invalidConfig == "json" and '{"RESTART_ENABLED":true, broken'
@@ -177,8 +198,12 @@ local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
         held,heldSeconds=false,0; advance(time+50)
     end
     advance(0); assert(#allWidgets==0,"attached before root populated")
-    hud.CanvasPanel_Root=root
-    advance(250); assert(#root.children==1,"did not retry attachment")
+    local characterRoot=object("Character root")
+    hud.CanvasPanel_Root=characterRoot
+    advance(250); assert(#root.children==1,"did not retry attachment: "..table.concat(logs,"\n"))
+    assert(viewport.WidgetTree.RootWidget==root and viewport.onScreen and viewport.z==100)
+    assert(viewport.bIsFocusable==false and viewport.visibility==3,"overlay steals focus/input")
+    assert(root.children[1].outer==viewport.WidgetTree,"alert still owned by character HUD")
     local fontLog=table.concat(logs,"\n")
     assert((fontLog:find("small text font readback:",1,true) ~= nil) == (probe == true),
         "font diagnostics must be silent by default and available to the probe")
@@ -193,6 +218,41 @@ local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
             return table.concat(parts," ")
         end
         return collect(c)
+    end
+    if toggleCase=="death" then
+        local mode=object("Death restart mode")
+        mode.HasAuthority=function() engine(); return true end
+        mode.RestartGame=function() engine(); restarts=restarts+1 end
+        world.AuthorityGameMode=mode
+        toggleHeld=false; advance(time+50)
+        -- Reproduce a local death: remove/invalidate the entire original HUD
+        -- BEFORE the next scoring poll, then remove all viewport widgets too.
+        hud.valid=false; characterRoot.valid=false; viewport.onScreen=false
+        player.Deaths=1; advance(time+350)
+        assert(shown():find("PLAYER KILLED",1,true) and viewport.onScreen,
+            "death alert lost with removed character HUD")
+        assert(shown():find("HOLD TO RESTART",1,true),"dead host lost restart control")
+        local replacement=object("Replacement character HUD")
+        replacement.GetWorld=function() engine(); return world end
+        notify(replacement); advance(time+50)
+        assert(factoryCalls==1 and shown():find("PLAYER KILLED",1,true),"same-world HUD erased death alert")
+        held=true; heldSeconds=1.9; advance(time+50)
+        assert(restarts==0,"death restart fired early")
+        heldSeconds=2.1; advance(time+50)
+        assert(restarts==1,"dead host could not restart with configured two-second hold")
+        held=false; heldSeconds=0; advance(time+100)
+        host=false; player.Deaths=2; advance(time+350)
+        assert(not shown():find("HOLD TO RESTART",1,true),"dead client got restart hint")
+        held=true; heldSeconds=3; advance(time+100)
+        assert(restarts==1,"dead client restarted")
+        held=false; heldSeconds=0; advance(time+100); dismiss()
+        assert(shown()=="","dead client could not dismiss")
+        world.valid=false; advance(time+350)
+        assert(not viewport.onScreen,"old-world overlay survived mission travel")
+        assert(invalidNameReads==0 and fullPathReads==0)
+        print=realPrint
+        realPrint("death: HUD destruction, viewport removal, replacement, two-second host restart, client dismiss and travel cleanup passed")
+        return
     end
     if toggleCase=="summary" then
         penaltyName="Friendly Team Kill"
@@ -348,7 +408,7 @@ local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
     assert(shown():find("INCOMPLETE",1,true) and not shown():find("SUSPECT KILLED",1,true))
     mgr.bIsOfficialScoring=true; advance(22500)
     assert(not shown():find("SUSPECT KILLED",1,true),"unofficial scoring changes replayed")
-    player.Deaths=1; advance(22600)
+    player.Deaths=1; advance(22850)
     assert(shown():find("PLAYER KILLED",1,true) and shown():find("Alex",1,true),"player death did not alert")
     mgr.bIsOfficialScoring=false; player.Deaths=2
     advance(28100)
@@ -452,3 +512,5 @@ run("delayed",false,false,true,"normal")
 run("composed",false,false,true,"startoff")
 run("delayed",false,false,true,"custom")
 run("delayed",false,false,false,"summary")
+run("delayed",false,false,true,"death")
+run("composed",false,false,true,"death")

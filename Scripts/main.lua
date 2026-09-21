@@ -1,4 +1,4 @@
--- SRankAlert 0.5.2 -- observational alerts with deliberate host restart control.
+-- SRankAlert 0.5.3 -- observational alerts with deliberate host restart control.
 local source, Diff, Toast, Queue = require("source"), require("diff"), require("toast"), require("queue")
 local Presentation = require("presentation")
 local input = require("controls").new()
@@ -62,7 +62,7 @@ local showNext
 local function display(message, refresh)
     message.visual.persistent = message.sound == true or message.visual.fontProbe == true
     message.visual.restartAvailable = false
-    local pc = try(function() return active.hud:GetOwningPlayer() end)
+    local pc = active.controller
     if message.sound and CONFIG.RESTART_ENABLED and valid(pc)
         and try(function() return pc:IsLocalController() end)==true
         and try(function() return pc:HasAuthority() end)==true then
@@ -170,7 +170,11 @@ local function pollOnce()
 end
 local function tick(generation)
     if generation ~= pollGeneration then return end
-    if not active or not active:isValid() then active = nil; queue:clear(); return end
+    if not active or not active:isValid() then
+        if active then pcall(function() active:destroy() end) end
+        active = nil; queue:clear(); return
+    end
+    active:ensureViewport()
     local ok, err = pcall(pollOnce)
     if not ok then
         once("poll", "poll failed; coverage UNKNOWN: " .. tostring(err))
@@ -183,7 +187,7 @@ local function tick(generation)
 end
 local function controlTick(generation)
     if generation ~= pollGeneration or not active or not active:isValid() then return end
-    local pc = try(function() return active.hud:GetOwningPlayer() end)
+    local pc = active.controller
     if CONFIG.TOGGLE_KEY ~= "" then
         local toggleDown
         if valid(pc) then
@@ -237,7 +241,7 @@ local function controlTick(generation)
     active:setHoldProgress(progress)
     if action=="dismiss" then dismissCurrent()
     elseif action=="restart" then
-        local world=try(function() return active.hud:GetWorld() end)
+        local world=active.world
         local mode=valid(world) and try(function() return world.AuthorityGameMode end)
         if valid(mode) and try(function() return mode:HasAuthority() end)==true then
             clear()
@@ -250,6 +254,10 @@ local function controlTick(generation)
 end
 local function attach(hud)
     if not live(hud) then return end
+    local nextWorld = try(function() return hud:GetWorld() end)
+    -- A replacement character HUD in the same mission must not clear a death
+    -- alert or interrupt its hold. The independent overlay already owns both.
+    if active and active:isValid() and name(active.world) == name(nextWorld) then return end
     if active and active:isValid() and name(active.hud) == name(hud) then return end
     if pending and live(pending) and name(pending) == name(hud) then return end
     log("character HUD observed; waiting for widget tree")
@@ -259,7 +267,6 @@ local function attach(hud)
     if active then pcall(function() active:destroy() end) end
     active, pending = nil, hud
     toggleArmed = false
-    local nextWorld = try(function() return hud:GetWorld() end)
     if not valid(missionWorld) or not valid(nextWorld) or name(missionWorld) ~= name(nextWorld) then
         source.reset(hud)
         diff = Diff.new(CONFIG.TRIGGERS)
@@ -292,7 +299,7 @@ local function attach(hud)
     attempt()
 end
 
-log("loaded v0.5.2; " .. _VERSION .. "; " .. CONFIG.ACTION_KEY .. " tap dismiss / " ..
+log("loaded v0.5.3; " .. _VERSION .. "; " .. CONFIG.ACTION_KEY .. " tap dismiss / " ..
     (CONFIG.RESTART_ENABLED and "hold host restart enabled (experimental)" or "restart disabled"))
 log(CONFIG.TOGGLE_KEY ~= "" and (CONFIG.TOGGLE_KEY .. " toggles alerts in missions; starting " .. (enabled and "ON" or "OFF"))
     or ("alert toggle shortcut disabled; starting " .. (enabled and "ON" or "OFF")))

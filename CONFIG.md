@@ -1,6 +1,6 @@
 # Editing your settings
 
-Settings reference for version 0.5.2.
+Settings reference for version 0.5.3.
 
 Want a different key, a bigger alert, or no restart button? Start with
 [Settings most people will want to change](#settings-most-people-will-want-to-change).
@@ -37,7 +37,7 @@ feels. You don't need to work through the whole file.
 | Field | Default | What it does and allowed values |
 |---|---|---|
 | `ACTION_KEY` | `"F9"` | One Unreal Engine key name for both dismiss and restart, such as `F9`, `F11`, `Home` or `ThumbMouseButton`. Use a letter first, then letters, digits or underscores, up to 64 characters. Names are case-sensitive to the game. The loader checks the format, not whether the game recognizes the name or another mod uses it. No chords such as `Ctrl+F9`; this mod has no modifier settings. Choose a key that is not a movement/combat control. |
-| `TOGGLE_KEY` | `"F8"` | Turns alerts off/on while the character HUD is attached, even with no alert showing. Same key-name format as `ACTION_KEY`, or `""` to disable the shortcut. Must differ from `ACTION_KEY`; a matching name disables the toggle with a log warning. Other mods may also use F8. Missing fields in older configs use F8 automatically. |
+| `TOGGLE_KEY` | `"F8"` | Turns alerts off/on while the mod overlay is active (including after death), even with no alert showing. Same key-name format as `ACTION_KEY`, or `""` to disable the shortcut. Must differ from `ACTION_KEY`; a matching name disables the toggle with a log warning. Other mods may also use F8. Missing fields in older configs use F8 automatically. |
 | `RESTART_ENABLED` | `false` | `true` opts into the experimental host/single-player hold-to-restart action, which is still unverified in a live mission. Tap-to-dismiss works either way. Missing or invalid values leave restart off. |
 | `RESTART_HOLD_SECONDS` | `3` | Seconds to hold before requesting restart; 1–5. Host/single-player only. |
 | `SCALE` | `1` | Scales the entire alert; 0.5–3. Try this first if everything looks too small. |

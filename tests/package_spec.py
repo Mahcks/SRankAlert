@@ -4,6 +4,8 @@ from zipfile import ZipFile
 import subprocess
 import sys
 import re
+import os
+import runpy
 from shutil import copy2
 from tempfile import TemporaryDirectory
 
@@ -23,6 +25,8 @@ archive_path = build()
 # A release must identify itself consistently in code, docs and the ZIP filename.
 main = (root / "Scripts/main.lua").read_text(encoding="utf-8")
 version = re.search(r'loaded v(\d+\.\d+\.\d+);', main).group(1)
+if os.environ.get("GITHUB_REF_TYPE") == "tag":
+    assert os.environ.get("GITHUB_REF_NAME") == f"v{version}", "Tag/runtime version mismatch; refusing release"
 assert main.startswith("-- SRankAlert " + version + " --")
 assert archive_path.name == f"SRankAlert-{version}.zip", "Runtime/package version mismatch"
 readme = (root / "README.md").read_text(encoding="utf-8")
@@ -44,6 +48,29 @@ with ZipFile(archive_path) as archive:
         assert archive.read(name) == (root / relative).read_bytes(), f"Packaged bytes differ: {name}"
 
 assert build().read_bytes() == first_build, "Identical sources produced different ZIP bytes"
+# A public release must use the tagged files, not just a ZIP with the right name.
+prepare = runpy.run_path(str(root / "tools/release.py"))["prepare"]
+with TemporaryDirectory(prefix="srankalert-release-validation-") as temporary:
+    temp = Path(temporary)
+    notes = temp / "notes.md"
+    assert prepare(f"v{version}", archive_path.parent, notes) == archive_path
+    assert f"/releases/download/v{version}/{archive_path.name}" in notes.read_text(encoding="utf-8")
+    try:
+        prepare("v999.0.0", archive_path.parent, notes)
+        raise AssertionError("Mismatched tag was accepted")
+    except ValueError as error:
+        assert "does not match runtime" in str(error)
+    with ZipFile(archive_path) as original, ZipFile(temp / archive_path.name, "w") as changed:
+        for name in original.namelist():
+            data = original.read(name)
+            if name == "SRankAlert/Scripts/main.lua":
+                data += b"\n-- unexpected modification\n"
+            changed.writestr(name, data)
+    try:
+        prepare(f"v{version}", temp, notes)
+        raise AssertionError("Modified release artifact was accepted")
+    except ValueError as error:
+        assert "does not match the tagged source" in str(error)
 # Run the lifecycle harness against the extracted ZIP, not a reconstruction from
 # source files. Only the temporary extraction gains a tests folder; the ZIP does not.
 with TemporaryDirectory(prefix="srankalert-release-") as temporary:

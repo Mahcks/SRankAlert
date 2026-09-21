@@ -1,4 +1,4 @@
--- Owned UMG subtree, using the reference mod's construction/overlay pattern.
+-- Owned viewport overlay; its lifetime is independent of the character HUD.
 -- Every entry point and animation callback runs on the game thread.
 local M = {}
 local PREFIX, pinned, serial = "SRA_Toast_", {}, 0
@@ -66,26 +66,48 @@ local function font(widget, hud, cfg, size, face)
 end
 function M.attach(hud, cfg, log, schedule)
     if not valid(hud) then return nil, "HUD invalid" end
-    local root = try(function() return hud.CanvasPanel_Root end)
-    if not valid(root) then return nil, "CanvasPanel_Root not ready" end
-    local container
+    -- Wait until the character HUD has initialized its local player context.
+    if not valid(try(function() return hud.CanvasPanel_Root end)) then
+        return nil, "CanvasPanel_Root not ready"
+    end
+    local controller = try(function() return hud:GetOwningPlayer() end)
+    local world = try(function() return hud:GetWorld() end)
+    if not valid(controller) or not valid(world)
+        or try(function() return controller:IsLocalController() end) ~= true then
+        return nil, "local player/world not ready"
+    end
+    local container, viewport
     local ok, result = pcall(function()
-        local stale = {}
-        for i = 0, root:GetChildrenCount() - 1 do
-            local child = root:GetChildAt(i)
-            if valid(child) then
-                local n = child:GetFName():ToString()
-                if n:sub(1, #PREFIX) == PREFIX then stale[#stale + 1] = child end
+        -- Unreal's factory initializes the widget and its owning player. Keep the
+        -- alert outside the game's HUD so death cannot hide it with that parent.
+        local library = StaticFindObject("/Script/UMG.Default__WidgetBlueprintLibrary")
+        local class = StaticFindObject("/Script/UMG.UserWidget")
+        assert(valid(library) and valid(class), "viewport widget factory unavailable")
+        -- A script reload can leave the previous version's viewport widget alive.
+        -- Identify only our named root; never remove another mod's widget.
+        local existing = try(function() return FindAllOf("UserWidget") end) or {}
+        for _, widget in ipairs(existing) do
+            local oldRoot = valid(widget) and try(function() return widget.WidgetTree.RootWidget end)
+            local oldName = valid(oldRoot) and try(function() return oldRoot:GetFName():ToString() end)
+            if type(oldName) == "string" and oldName:sub(1, #PREFIX) == PREFIX then
+                widget:RemoveFromParent()
             end
         end
-        for _, child in ipairs(stale) do if valid(child) then root:RemoveChild(child) end end
-        container = construct("ScaleBox", hud, true)
+        viewport = library:Create(controller, class, controller)
+        assert(valid(viewport), "viewport widget creation failed")
+        local tree = viewport.WidgetTree
+        if not valid(tree) then tree = construct("WidgetTree", viewport); viewport.WidgetTree = tree end
+        local root = construct("Overlay", tree, true)
+        tree.RootWidget = root
+        viewport.bIsFocusable = false
+        viewport:SetVisibility(3) -- Never captures mouse clicks or menu focus.
+        container = construct("ScaleBox", tree, true)
         container:SetVisibility(1)
         container.Stretch = 7
         container:SetUserSpecifiedScale(cfg.SCALE)
-        local width = construct("SizeBox", hud)
+        local width = construct("SizeBox", tree)
         width:SetWidthOverride(cfg.WIDTH)
-        local content = construct("VerticalBox", hud)
+        local content = construct("VerticalBox", tree)
         local function smallFont(label, size, face)
             local info = label.Font -- pristine UMG defaults, never HUD donor
             local candidate = try(function() return StaticFindObject(cfg.SMALL_FONT_PATH) end)
@@ -111,7 +133,7 @@ function M.attach(hud, cfg, log, schedule)
             label:SetAutoWrapText(true)
             textColor(label, linear(cfg.CONTEXT_COLOR))
         end
-        local headline, context = construct("TextBlock", hud), construct("TextBlock", hud)
+        local headline, context = construct("TextBlock", tree), construct("TextBlock", tree)
         font(headline, hud, cfg, cfg.HEADLINE_SIZE, cfg.FONT_HEADLINE_FACE)
         smallFont(context, cfg.CONTEXT_SIZE)
         textColor(headline, linear(cfg.HEADLINE_COLOR))
@@ -123,15 +145,15 @@ function M.attach(hud, cfg, log, schedule)
         -- Separate layout rows reserve real space; avoid a brush sitting on the
         -- text baseline or relying on padding around a one-unit desired height.
         local function spacer(height)
-            local space=construct("SizeBox",hud)
+            local space=construct("SizeBox",tree)
             space:SetHeightOverride(height)
             assert(content:AddChildToVerticalBox(space))
         end
         spacer(cfg.DIVIDER_TOP_GAP)
-        local divider = construct("SizeBox", hud)
+        local divider = construct("SizeBox", tree)
         divider:SetWidthOverride(cfg.DIVIDER_WIDTH)
         divider:SetHeightOverride(1)
-        local rule = construct("Border", hud)
+        local rule = construct("Border", tree)
         rule:SetPadding({Left=0,Right=0,Top=0,Bottom=0})
         brush(rule, linear(cfg.CONTEXT_COLOR, cfg.DIVIDER_OPACITY))
         assert(divider:AddChild(rule))
@@ -141,38 +163,38 @@ function M.attach(hud, cfg, log, schedule)
         spacer(cfg.DIVIDER_BOTTOM_GAP)
         local contextSlot = assert(content:AddChildToVerticalBox(context), "context slot failed")
         contextSlot:SetPadding({Left=0,Right=0,Top=cfg.CONTEXT_GAP,Bottom=0})
-        local controls = construct("HorizontalBox", hud)
+        local controls = construct("HorizontalBox", tree)
         local controlsSlot = assert(content:AddChildToVerticalBox(controls))
         controlsSlot:SetHorizontalAlignment(2)
         controlsSlot:SetPadding({Left=0,Right=0,Top=8,Bottom=0})
         local keyLabels = {}
         local function keyGroup(labelText, withProgress)
-            local group = construct("SizeBox", hud)
+            local group = construct("SizeBox", tree)
             group:SetWidthOverride(cfg.KEY_GROUP_WIDTH)
-            local column = construct("VerticalBox", hud)
+            local column = construct("VerticalBox", tree)
             assert(group:AddChild(column))
             assert(controls:AddChildToHorizontalBox(group))
-            local tile = construct("SizeBox", hud)
+            local tile = construct("SizeBox", tree)
             tile:SetWidthOverride(cfg.KEY_TILE_SIZE)
             tile:SetHeightOverride(cfg.KEY_TILE_SIZE)
-            local layers = construct("Overlay", hud)
+            local layers = construct("Overlay", tree)
             layers:SetClipping(1) -- ClipToBounds
             assert(tile:AddChild(layers))
             local tileSlot=assert(column:AddChildToVerticalBox(tile))
             tileSlot:SetHorizontalAlignment(2)
-            local backing=construct("Border",hud)
+            local backing=construct("Border",tree)
             backing:SetPadding({Left=0,Right=0,Top=0,Bottom=0})
             brush(backing,linear(cfg.KEY_EMPTY_COLOR,1))
             local backingSlot=assert(layers:AddChildToOverlay(backing))
             backingSlot:SetHorizontalAlignment(0); backingSlot:SetVerticalAlignment(0)
             local fill,fillBox
             if withProgress then
-                fillBox=construct("SizeBox",hud)
+                fillBox=construct("SizeBox",tree)
                 fillBox:SetWidthOverride(0)
                 -- Stretch to the tile's arranged inner height rather than fixing
                 -- a desired height that can leave a strip above the bottom edge.
                 fillBox:SetClipping(1)
-                fill=construct("Border",hud)
+                fill=construct("Border",tree)
                 fill:SetPadding({Left=0,Right=0,Top=0,Bottom=0})
                 fill:SetRenderOpacity(cfg.KEY_FILL_OPACITY)
                 assert(fillBox:AddChild(fill))
@@ -184,9 +206,9 @@ function M.attach(hud, cfg, log, schedule)
             -- Dark three-unit edge under each light one-unit edge provides
             -- local contrast on pale/red scenes without an alert-wide panel.
             for _,edge in ipairs({{0,1,true},{0,3,true},{1,0,false},{3,0,false}}) do
-                local size=construct("SizeBox",hud)
+                local size=construct("SizeBox",tree)
                 if edge[3] then size:SetHeightOverride(TILE_BORDER) else size:SetWidthOverride(TILE_BORDER) end
-                local stroke=construct("Border",hud)
+                local stroke=construct("Border",tree)
                 stroke:SetPadding({Left=0,Right=0,Top=0,Bottom=0})
                 brush(stroke,linear(cfg.TEXT_OUTLINE_COLOR,1))
                 assert(size:AddChild(stroke))
@@ -195,21 +217,21 @@ function M.attach(hud, cfg, log, schedule)
             end
             -- Four one-unit strokes form an empty square without an opaque panel.
             for _,edge in ipairs({{0,1,true},{0,3,true},{1,0,false},{3,0,false}}) do
-                local size=construct("SizeBox",hud)
+                local size=construct("SizeBox",tree)
                 if edge[3] then size:SetHeightOverride(1) else size:SetWidthOverride(1) end
-                local stroke=construct("Border",hud)
+                local stroke=construct("Border",tree)
                 stroke:SetPadding({Left=0,Right=0,Top=0,Bottom=0})
                 brush(stroke,linear(cfg.CONTEXT_COLOR,cfg.KEY_OUTLINE_OPACITY))
                 assert(size:AddChild(stroke))
                 local slot=assert(layers:AddChildToOverlay(size))
                 slot:SetHorizontalAlignment(edge[1]); slot:SetVerticalAlignment(edge[2])
             end
-            local glyph=construct("TextBlock",hud)
+            local glyph=construct("TextBlock",tree)
             smallFont(glyph,cfg.KEY_GLYPH_SIZE,"Bold")
             glyph:SetText(FText(cfg.ACTION_KEY))
             local glyphSlot=assert(layers:AddChildToOverlay(glyph))
             glyphSlot:SetHorizontalAlignment(2); glyphSlot:SetVerticalAlignment(2)
-            local label=construct("TextBlock",hud)
+            local label=construct("TextBlock",tree)
             smallFont(label,cfg.KEY_LABEL_SIZE)
             label:SetAutoWrapText(false)
             label:SetText(FText(labelText))
@@ -221,7 +243,7 @@ function M.attach(hud, cfg, log, schedule)
         local dismissGroup=keyGroup("DISMISS",false)
         local restartGroup,progress,progressBox=keyGroup("HOLD TO RESTART",true)
         -- Optional alphabet specimens use exactly the real small-text font settings.
-        local specimenHint, specimenContext = construct("TextBlock", hud), construct("TextBlock", hud)
+        local specimenHint, specimenContext = construct("TextBlock", tree), construct("TextBlock", tree)
         smallFont(specimenHint, cfg.CONTROL_SIZE)
         smallFont(specimenContext, cfg.CONTEXT_SIZE)
         assert(content:AddChildToVerticalBox(specimenHint), "font specimen slot failed")
@@ -253,10 +275,13 @@ function M.attach(hud, cfg, log, schedule)
             container:SetRenderTranslation({X=0,Y=-(cfg.CENTER_OFFSET or 140)})
         end
 
-        local handle = {hud=hud,container=container,headline=headline,context=context,
+        local handle = {hud=hud,viewport=viewport,world=world,controller=controller,container=container,headline=headline,context=context,
             controls=controls,specimenHint=specimenHint,specimenContext=specimenContext,progress=progress,progressBox=progressBox,restartGroup=restartGroup,soundWarned=false,animation=0}
         function handle:isValid()
-            return valid(self.hud) and valid(self.container) and valid(self.headline)
+            local controllerWorld = valid(self.controller) and try(function() return self.controller:GetWorld() end)
+            return valid(self.viewport) and valid(self.world) and valid(controllerWorld)
+                and controllerWorld:GetAddress() == self.world:GetAddress()
+                and valid(self.container) and valid(self.headline)
                 and valid(self.context) and valid(self.controls) and valid(self.specimenHint) and valid(self.specimenContext) and valid(self.progress) and valid(self.progressBox) and valid(self.restartGroup)
         end
         function handle:setHoldProgress(value)
@@ -273,6 +298,12 @@ function M.attach(hud, cfg, log, schedule)
         function handle:destroy()
             self:hide()
             if valid(self.container) then self.container:RemoveFromParent() end
+            if valid(self.viewport) then self.viewport:RemoveFromParent() end
+        end
+        function handle:ensureViewport()
+            -- Restore only our overlay if a death transition removes viewport UI.
+            -- A different/invalid world ends its lifetime instead of restoring it.
+            if self:isValid() and not self.viewport:IsInViewport() then self.viewport:AddToViewport(100) end
         end
         function handle:show(message, refresh)
             self.animation = self.animation + 1
@@ -317,16 +348,19 @@ function M.attach(hud, cfg, log, schedule)
         function handle:playSound()
             if not cfg.SOUND then return end
             local sound = cfg.SOUND_PATH ~= "" and try(function() return StaticFindObject(cfg.SOUND_PATH) end)
-            local played = valid(sound) and pcall(function() self.hud:PlaySound(sound) end)
+            local played = valid(sound) and pcall(function() self.viewport:PlaySound(sound) end)
             if not played and not self.soundWarned then
                 self.soundWarned = true
                 log("optional sound unavailable; visual alerts continue")
             end
         end
+        handle:ensureViewport()
+        log("independent viewport overlay attached; survives character HUD removal")
         return handle
     end)
     if ok then return result end
     if valid(container) then pcall(function() container:RemoveFromParent() end) end
+    if valid(viewport) then pcall(function() viewport:RemoveFromParent() end) end
     return nil, tostring(result)
 end
 return M
