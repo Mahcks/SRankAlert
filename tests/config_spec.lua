@@ -29,6 +29,7 @@ local function same(a,b)
     for key in pairs(b) do assert(a[key]~=nil) end
 end
 same(Config.defaults(),disk); same(fresh,disk)
+assert(disk.TOGGLE_KEY=="F8")
 for _, field in ipairs({"FONT_PROBE", "VERBOSE", "DIAGNOSTICS"}) do
     assert(disk[field] == false, field .. " must default off in a release")
 end
@@ -54,6 +55,17 @@ for _, text in ipairs({'{}', '{"RESTART_ENABLED":false}', '{"RESTART_ENABLED":"t
 end
 
 -- Older files remain readable and untouched; removed options cannot re-enter the active config.
+config=loadUnchanged('{"TOGGLE_KEY":"F10"}')
+assert(config.TOGGLE_KEY=="F10")
+config=loadUnchanged('{"TOGGLE_KEY":"Ctrl+F8"}')
+assert(config.TOGGLE_KEY=="F8"); warning("TOGGLE_KEY")
+config=loadUnchanged('{"TOGGLE_KEY":""}')
+assert(config.TOGGLE_KEY=="")
+config=loadUnchanged('{"TOGGLE_KEY":"f9"}')
+assert(config.TOGGLE_KEY==""); warning("TOGGLE_KEY")
+config=loadUnchanged('{"ACTION_KEY":"F8"}')
+assert(config.ACTION_KEY=="F8" and config.TOGGLE_KEY==""); warning("TOGGLE_KEY")
+
 config=loadUnchanged('{"FONT_CONTEXT_FACE":"Bold","FONT_CONTROL_FACE":"Bold","SCALE":1.25}')
 assert(config.FONT_CONTEXT_FACE==nil and config.FONT_CONTROL_FACE==nil and config.SCALE==1.25)
 assert(table.concat(logs,"\n"):find("unknown field FONT_CONTEXT_FACE",1,true))

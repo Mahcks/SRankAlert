@@ -4,6 +4,7 @@ local M = {}
 
 local DEFAULTS = {
     ACTION_KEY = "F9",         -- Unreal key name; tap dismiss, hold restart
+    TOGGLE_KEY = "F8",         -- toggle alerts in a mission; empty disables this shortcut
     RESTART_ENABLED = false,    -- experimental, host only; requires an explicit opt-in
     RESTART_HOLD_SECONDS = 3,
     DISMISS_TAP_SECONDS = 0.3, -- longer releases cancel hold, keeping alert visible
@@ -122,8 +123,9 @@ local function validValue(key, value, default)
     end
     if COLORS[key] then return value:match("^%x%x%x%x%x%x$") ~= nil end
     if key=="ANCHOR" then return ANCHORS[value] == true end
-    if key=="ACTION_KEY" then
+    if key=="ACTION_KEY" or key=="TOGGLE_KEY" then
         -- Validate a single Unreal key-name token, not a keyboard chord or executable Lua.
+        if key=="TOGGLE_KEY" and value=="" then return true end
         return #value<=64 and value:match("^[A-Za-z][A-Za-z0-9_]*$") ~= nil
     end
     if FONTS[key] then return plainString(value,64) end
@@ -162,6 +164,11 @@ local function validated(values, log)
     end
     for key in pairs(values) do
         if DEFAULTS[key]==nil then log("config warning: unknown field " .. tostring(key) .. "; ignored") end
+    end
+    -- Never let a toggle press also dismiss an alert or start a restart hold.
+    if result.TOGGLE_KEY:lower()==result.ACTION_KEY:lower() then
+        result.TOGGLE_KEY=""
+        log("config warning: TOGGLE_KEY matches ACTION_KEY; toggle shortcut disabled; choose different keys")
     end
     -- Fade times must fit within the selected status lifetime. Defaults always
     -- fit even with the shortest valid ALERT_MS, so no secondary clamping is needed.

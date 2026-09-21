@@ -2,7 +2,7 @@
 
 **A small warning that pops up mid-mission when something happens that can cost you an S rank in Ready or Not.**
 
-Kill a civilian, lose a human teammate, trip a penalty, fail an objective: a short message appears just above your crosshair so you know right away, instead of finding out at the debrief screen. Version 0.5.0 (prepared for release; not yet published).
+Kill a civilian, lose a human teammate, trip a penalty, fail an objective: a short message appears just above your crosshair so you know right away, instead of finding out at the debrief screen. Version 0.5.1 (prepared for release; not yet published).
 
 Two things to know up front:
 
@@ -21,7 +21,7 @@ If you get stuck on UE4SS itself, its [documentation](https://docs.ue4ss.com/ins
 
 ## Installing
 
-The public repository is [Mahcks/SRankAlert](https://github.com/Mahcks/SRankAlert). Version 0.5.0 is being prepared for publication; its ZIP and a Nexus Mods listing link are pending. Once published, download `SRankAlert-0.5.0.zip` from [GitHub Releases](https://github.com/Mahcks/SRankAlert/releases).
+The public repository is [Mahcks/SRankAlert](https://github.com/Mahcks/SRankAlert). Version 0.5.1 is being prepared for publication; its ZIP and a Nexus Mods listing link are pending. Once published, download `SRankAlert-0.5.1.zip` from [GitHub Releases](https://github.com/Mahcks/SRankAlert/releases).
 
 There are two ways to install it: let a small **install script** do the copying and the `mods.txt` edit for you, or do everything by hand. Either way, you do steps 0 to 2 yourself, because the script doesn't install UE4SS.
 
@@ -137,7 +137,7 @@ The easiest check is in-game: a brief **S-RANK ALERTS ACTIVE** message shortly a
 For a proper check, open `ReadyOrNot\Binaries\Win64\ue4ss\UE4SS.log` in Notepad (UE4SS starts a fresh one each time you launch the game) and search for `[SRankAlert]`. A healthy start looks roughly like this:
 
 ```
-[SRankAlert] loaded v0.5.0; ... F9 tap dismiss / restart disabled
+[SRankAlert] loaded v0.5.1; ... F9 tap dismiss / restart disabled
 [SRankAlert] game-thread route: ExecuteInGameThreadWithDelay
 [SRankAlert] character HUD observed; waiting for widget tree
 [SRankAlert] toast attached after 250ms; poll=350ms
@@ -179,7 +179,21 @@ Some things worth knowing:
 
 ## Controls
 
-Everything is on one key, **F9**, and it only matters while an alert is showing.
+**F8 toggles alerts off/on during a mission**, even when no alert is visible.
+You'll see a brief confirmation. Turning alerts off clears the current alert,
+cancels any restart hold and mutes future incident popups and sounds. Monitoring
+and event logging continue, so already observed incidents don't replay on enable.
+
+The toggle lasts for the current game session, including mission changes. Your
+next launch uses `START_ENABLED` again; pressing F8 does not edit `config.json`.
+It requires an attached character HUD and does not work in menus or spectator view.
+
+F8 is unassigned in the saved game bindings checked for development, but some
+other mods use it, including [Universal Weapon P.O.I Crosshair](https://www.nexusmods.com/readyornot/mods/8681).
+Change `"TOGGLE_KEY": "F8"` in `config.json` if needed. Use a different key from
+`ACTION_KEY`; set `TOGGLE_KEY` to `""` if you want no toggle shortcut.
+
+**F9 handles the current alert:**
 
 **Restart is off by default.** If you choose to try this experimental feature,
 set `"RESTART_ENABLED": true` in `config.json`. The hold actions below apply only
@@ -187,6 +201,7 @@ when you've enabled it. Without it, you get the dismiss tile alone.
 
 | What you do | What happens |
 |---|---|
+| **Press F8** | Turns incident alerts off/on and shows a brief confirmation. |
 | **Tap F9** (a quick press and release, under about 0.3 seconds) | Dismisses the alert. Future alerts still appear. |
 | **Hold F9 for 3 seconds** during an incident alert | Asks the game to **restart the mission**. The restart icon fills up while you hold. Single-player and co-op **host** only. |
 | **Hold F9, then let go early** | Cancels the restart. The alert stays up and you can try again. |
@@ -198,7 +213,8 @@ When enabled, restart is **always manual**. The mod never restarts anything by i
 - **Restart is experimental.** It calls the game's own restart function, which I've tested with a simulator but **not yet in a real mission**. Treat it as "should work" rather than "does work." Don't try it during a run you care about.
 - Leave `"RESTART_ENABLED": false` to keep restart off, or set it back to `false` after testing.
 
-There are no other keys. No toggle, no modifiers. To turn the whole mod off, remove it from `mods.txt` (see [Uninstalling](#uninstalling)).
+Both keys are editable, and there are no modifier settings. To stop loading the
+mod entirely, disable it in `mods.txt` (see [Uninstalling](#uninstalling)).
 
 ## Configuration
 
@@ -282,7 +298,7 @@ python tests/package_spec.py
 ```
 
 The tests use simulated game objects and isolated folders; they don't need the game
-or change your installed mods. The package check builds `dist/SRankAlert-0.5.0.zip`
+or change your installed mods. The package check builds `dist/SRankAlert-0.5.1.zip`
 and checks its contents and reproducibility. `python tools/package.py` builds the
 ZIP by itself. Build output stays out of Git.
 
@@ -293,7 +309,7 @@ automatically published as releases. In-game appearance and behavior still need
 live checks; CI can't establish those.
 
 Release names use `vMAJOR.MINOR.PATCH` tags and `SRankAlert-MAJOR.MINOR.PATCH.zip`
-downloads. For this prepared release, use tag `v0.5.0`, title **SRankAlert v0.5.0**,
-and `SRankAlert-0.5.0.zip`. The package test checks that the runtime log, README,
+downloads. For this prepared release, use tag `v0.5.1`, title **SRankAlert v0.5.1**,
+and `SRankAlert-0.5.1.zip`. The package test checks that the runtime log, README,
 config guide, changelog and ZIP version agree. Create the tag and GitHub release
 only after the pending live checks and release decisions are resolved.

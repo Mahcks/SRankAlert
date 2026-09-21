@@ -1,4 +1,4 @@
--- SRankAlert 0.5.0 -- observational alerts with deliberate host restart control.
+-- SRankAlert 0.5.1 -- observational alerts with deliberate host restart control.
 local source, Diff, Toast, Queue = require("source"), require("diff"), require("toast"), require("queue")
 local Presentation = require("presentation")
 local input = require("controls").new()
@@ -53,6 +53,7 @@ end
 
 source.configure(log, CONFIG.DIAGNOSTICS)
 local enabled, active, pending = CONFIG.START_ENABLED, nil, nil
+local toggleArmed = false -- require a release before the first press on each HUD
 local attachGeneration, pollGeneration = 0, 0
 local diff, queue = Diff.new(CONFIG.TRIGGERS), Queue.new()
 local issueSignature, coverage = nil, nil
@@ -186,6 +187,41 @@ end
 local function controlTick(generation)
     if generation ~= pollGeneration or not active or not active:isValid() then return end
     local pc = try(function() return active.hud:GetOwningPlayer() end)
+    if CONFIG.TOGGLE_KEY ~= "" then
+        local toggleDown
+        if valid(pc) then
+            toggleDown = try(function() return pc:IsInputKeyDown({KeyName=FName(CONFIG.TOGGLE_KEY)}) end)
+        end
+        if toggleDown == false then toggleArmed = true
+        elseif toggleDown ~= true then toggleArmed = false
+        elseif toggleArmed then
+            toggleArmed = false
+            if not enabled then
+                -- Catch changes since the last poll while still muted. Otherwise an
+                -- incident immediately before re-enabling could appear as a new one.
+                local ok, err = pcall(pollOnce)
+                if not ok then
+                    log("alerts remain off: could not refresh mission data: " .. tostring(err))
+                    schedule(50,function() controlTick(generation) end)
+                    return
+                end
+            end
+            enabled = not enabled
+            clear()
+            input = require("controls").new() -- discard any partially held restart
+            log("alerts " .. (enabled and "ON" or "OFF") .. " via " .. CONFIG.TOGGLE_KEY)
+            local incomplete = enabled and coverage ~= ""
+            local message = {sound=false, visual=Presentation.notice(
+                enabled and "S-RANK ALERTS ON" or "S-RANK ALERTS OFF",
+                enabled and (incomplete and "Some mission data is unavailable" or "Watching for new incidents")
+                    or ("Press " .. CONFIG.TOGGLE_KEY .. " to turn alerts back on"),
+                incomplete and "warning" or "info")}
+            -- One short confirmation is allowed while muted; incident enqueueing
+            -- remains disabled and the shared queue still handles dismissal/timers.
+            queue:push(message)
+            display(queue:next())
+        end
+    end
     local down, seconds
     if valid(pc) then
         down=try(function() return pc:IsInputKeyDown({KeyName=FName(CONFIG.ACTION_KEY)}) end)
@@ -225,6 +261,7 @@ local function attach(hud)
     clear()
     if active then pcall(function() active:destroy() end) end
     active, pending = nil, hud
+    toggleArmed = false
     local nextWorld = try(function() return hud:GetWorld() end)
     if not valid(missionWorld) or not valid(nextWorld) or name(missionWorld) ~= name(nextWorld) then
         source.reset(hud)
@@ -258,8 +295,10 @@ local function attach(hud)
     attempt()
 end
 
-log("loaded v0.5.0; " .. _VERSION .. "; " .. CONFIG.ACTION_KEY .. " tap dismiss / " ..
+log("loaded v0.5.1; " .. _VERSION .. "; " .. CONFIG.ACTION_KEY .. " tap dismiss / " ..
     (CONFIG.RESTART_ENABLED and "hold host restart enabled (experimental)" or "restart disabled"))
+log(CONFIG.TOGGLE_KEY ~= "" and (CONFIG.TOGGLE_KEY .. " toggles alerts in missions; starting " .. (enabled and "ON" or "OFF"))
+    or ("alert toggle shortcut disabled; starting " .. (enabled and "ON" or "OFF")))
 log("game-thread route: " .. (tier == "delayed" and "ExecuteInGameThreadWithDelay" or
     tier == "composed" and "ExecuteWithDelay + ExecuteInGameThread" or "NONE (disabled)"))
 log("S-rank inference uses vanilla rules; no verified group pass/fail or final S-eligibility flag")

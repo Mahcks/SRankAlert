@@ -1,4 +1,4 @@
-# 0.5.0 live release checks
+# 0.5.1 live release checks
 
 This is the current checklist, replacing the older per-version test instructions.
 Unchecked items are pending. Simulated tests do not count as a live pass.
@@ -13,7 +13,7 @@ Record the game build, UE4SS build, resolution and UI scale with each result.
 - [x] Installer ran against the real game folder with the game closed; backups
   and copied-file hashes verified. First native load generated persistent JSON.
 
-These observations predate the prepared 0.5.0 ZIP. They do not establish a complete
+These observations predate the prepared 0.5.1 ZIP. They do not establish a complete
 current-release pass.
 
 ## Controls and mission behavior
@@ -24,7 +24,11 @@ current-release pass.
 - [ ] Check F9 against the base game's default controls and any custom bindings.
   Saved bindings inspected locally have no F9 mapping; this is not proof of defaults.
 - [ ] With an alert showing, tap F9 for no more than about 0.3 seconds and release:
-  it dismisses and future alerts still work. No R, F6, toggle or modifier shortcut.
+  it dismisses and future alerts still work. No R, F6 or modifier shortcut.
+- [ ] Press F8 with and without an incident visible: one press toggles once, shows
+  OFF/ON confirmation, and clears any current incident/restart hold when muted.
+  Events while off must not replay when enabling; new events must still appear.
+  Check `TOGGLE_KEY` customization and enabling from `START_ENABLED: false`.
 - [ ] Hold for one second and release: the alert stays and its progress empties.
   A key held before the alert must first be released before restart can arm.
 - [ ] Confirm co-op clients only see dismiss and cannot request restart.

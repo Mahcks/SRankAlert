@@ -6,6 +6,16 @@ milestones; their release dates were not recorded.
 
 ## Unreleased
 
+## 0.5.1 (prepared; not yet published)
+
+### Added
+
+- Configurable `TOGGLE_KEY` (F8 by default) to turn incident alerts off/on during
+  missions, with a short status confirmation. Muting clears the current alert and
+  cancels restart holds; monitoring continues to avoid replaying observed incidents.
+- Toggle choices last for the game session; `START_ENABLED` controls the next launch.
+  Conflicting dismiss/toggle key names disable the toggle with a warning.
+
 ## 0.5.0 (prepared; not yet published)
 
 ### Added

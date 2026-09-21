@@ -1,11 +1,13 @@
 -- Run the real main/source/toast modules with a deterministic engine model.
 -- Every mocked UObject method asserts that it is on the game thread.
-local function run(tier, probe, invalidConfig, restartChoice)
+local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
     for _, mod in ipairs({"source","diff","toast","queue","presentation"}) do package.loaded[mod]=nil end
     local time, scheduled, inGame, logs, allWidgets = 0, {}, false, {}, {}
     local invalidNameReads, fullPathReads = 0, 0
     local key, dismiss, notify
     local held=false
+    local toggleHeld=toggleCase ~= nil -- pre-held input must not toggle on attachment
+    local polledKeys={}
     local heldSeconds=0
     local host=true
     local restarts=0
@@ -52,14 +54,20 @@ local function run(tier, probe, invalidConfig, restartChoice)
     local function owningPlayer()
         engine()
         local pc=object("Controller")
-        pc.IsInputKeyDown=function() engine(); return held end
+        pc.IsInputKeyDown=function(_, key)
+            engine(); polledKeys[key.KeyName]=true
+            if key.KeyName=="F9" then return held end
+            if key.KeyName==(toggleCase=="custom" and "F10" or "F8") then return toggleHeld end
+            return false
+        end
         pc.GetInputKeyTimeDown=function() engine(); return heldSeconds end
         pc.IsLocalController=function() engine(); return true end
         pc.HasAuthority=function() engine(); return host end
         return pc
     end
     hud.GetOwningPlayer=owningPlayer
-    hud.PlaySound=engine
+    local sounds=0
+    hud.PlaySound=function() engine(); sounds=sounds+1 end
     local mgr,gs=object("Manager"),object("State")
     mgr.GetWorld=hud.GetWorld; gs.GetWorld=hud.GetWorld
     mgr.bIsOfficialScoring=true
@@ -134,10 +142,13 @@ local function run(tier, probe, invalidConfig, restartChoice)
     -- Use the real JSON loader, with files isolated from both the checkout and game.
     local Config = require("sra_config")
     local originalLoad = Config.load
-    local configPath = TEST_TMP .. "/runtime-" .. tier .. tostring(probe) .. tostring(invalidConfig) .. tostring(restartChoice) .. ".json"
-    if probe or invalidConfig or restartChoice ~= nil then
+    local configPath = TEST_TMP .. "/runtime-" .. tier .. tostring(probe) .. tostring(invalidConfig) .. tostring(restartChoice) .. tostring(toggleCase) .. ".json"
+    if probe or invalidConfig or restartChoice ~= nil or toggleCase then
         local file=assert(io.open(configPath,"wb"))
-        file:write(probe and '{"FONT_PROBE":true}'
+        file:write(toggleCase and ('{"START_ENABLED":' .. tostring(toggleCase~="startoff") ..
+            ',"RESTART_ENABLED":true,"SOUND":true,"SOUND_PATH":"/Test/Sound","TOGGLE_KEY":"' ..
+            (toggleCase=="custom" and "F10" or "F8") .. '"}')
+            or probe and '{"FONT_PROBE":true}'
             or invalidConfig == "json" and '{"RESTART_ENABLED":true, broken'
             or invalidConfig and '{"POLL_MS":-5,"CRITICAL_COLOR":"oops","RESTART_ENABLED":null}'
             or ('{"RESTART_ENABLED":' .. tostring(restartChoice) .. '}'))
@@ -181,6 +192,65 @@ local function run(tier, probe, invalidConfig, restartChoice)
             return table.concat(parts," ")
         end
         return collect(c)
+    end
+    if toggleCase then
+        local mode=object("Mode toggle test")
+        mode.HasAuthority=function() engine(); return true end
+        mode.RestartGame=function() engine(); restarts=restarts+1 end
+        world.AuthorityGameMode=mode
+        local function step() advance(time+50) end
+        local function toggle()
+            toggleHeld=false; step()
+            toggleHeld=true; step()
+            toggleHeld=false; step()
+        end
+        step()
+        assert(not table.concat(logs,"\n"):find(" via ",1,true),"pre-held toggle fired")
+        toggleHeld=false; step()
+        if toggleCase=="startoff" then
+            assert(shown()=="","START_ENABLED false showed startup notice")
+            kills=1; advance(time+350); assert(shown()=="" and sounds==0)
+            toggle(); assert(shown():find("ALERTS ON",1,true),"could not enable from startup-off")
+            advance(time+6000); assert(shown()=="","muted startup events replayed")
+        end
+        kills=kills+1; advance(time+350)
+        assert(shown():find("SUSPECT KILLED",1,true))
+        local soundsBefore=sounds
+        held=true; heldSeconds=2.5; step()
+        toggleHeld=true; step()
+        assert(shown():find("ALERTS OFF",1,true) and not shown():find("HOLD TO RESTART",1,true))
+        heldSeconds=4; advance(time+500)
+        assert(restarts==0,"toggle-off failed to cancel restart")
+        assert(shown():find("ALERTS OFF",1,true),"held toggle repeated")
+        kills=kills+1; advance(time+6000)
+        assert(shown()=="" and sounds==soundsBefore,"muted event showed or played sound")
+        -- Re-enable just after another incident; baseline must catch up before enabling.
+        kills=kills+1; toggle()
+        assert(shown():find("ALERTS ON",1,true))
+        advance(time+6000)
+        assert(shown()=="" and sounds==soundsBefore,"old incidents replayed on enable")
+        kills=kills+1; advance(time+350)
+        assert(shown():find("SUSPECT KILLED",1,true) and sounds==soundsBefore+1)
+        assert(restarts==0,"pre-held action key restarted after toggle-on")
+        held=false; heldSeconds=0; step(); dismiss(); assert(shown()=="")
+        -- On confirmation must retain the coverage warning rather than imply full coverage.
+        toggle(); mgr.bIsOfficialScoring=false; toggle()
+        assert(shown():find("WARNING:",1,true) and shown():find("unavailable",1,true))
+        toggle() -- muted state must survive a world/HUD replacement
+        world.valid=false; world=object("World after toggle")
+        hud.valid=false; hud=object("HUD after toggle")
+        hud.GetWorld=function() engine(); return world end
+        hud.GetOwningPlayer=owningPlayer; hud.CanvasPanel_Root=root
+        mgr.GetWorld=hud.GetWorld; gs.GetWorld=hud.GetWorld; player.GetWorld=hud.GetWorld
+        mgr.bIsOfficialScoring=true; toggleHeld=true
+        notify(hud); advance(time+700)
+        assert(shown()=="","HUD change or pre-held key reset the muted state")
+        toggle(); assert(shown():find("ALERTS ON",1,true),"toggle failed after mission change")
+        assert(polledKeys[toggleCase=="custom" and "F10" or "F8"],"configured key was not polled")
+        assert(invalidNameReads==0 and fullPathReads==0)
+        print=realPrint
+        realPrint("toggle "..tier.."/"..toggleCase..": fresh press, off/on, sound, no replay, restart cancellation, custom key and coverage passed")
+        return
     end
     if probe then
         advance(6000)
@@ -360,3 +430,6 @@ run("delayed"); run("composed")
 run("delayed",false,false,false)
 run("delayed",false,true)
 run("delayed",false,"json")
+run("delayed",false,false,true,"normal")
+run("composed",false,false,true,"startoff")
+run("delayed",false,false,true,"custom")
