@@ -2,7 +2,7 @@
 
 **A small warning that pops up mid-mission when something happens that can cost you an S rank in Ready or Not.**
 
-Kill a civilian, lose a human teammate, trip a penalty, fail an objective: a short message appears just above your crosshair so you know right away, instead of finding out at the debrief screen. Version 0.5.1 (prepared for release; not yet published).
+Kill a civilian, lose a human teammate, trip a penalty, fail an objective: a short message appears just above your crosshair so you know right away, instead of finding out at the debrief screen. Version 0.5.2 (prepared for release; not yet published).
 
 Two things to know up front:
 
@@ -21,7 +21,7 @@ If you get stuck on UE4SS itself, its [documentation](https://docs.ue4ss.com/ins
 
 ## Installing
 
-The public repository is [Mahcks/SRankAlert](https://github.com/Mahcks/SRankAlert). Version 0.5.1 is being prepared for publication; its ZIP and a Nexus Mods listing link are pending. Once published, download `SRankAlert-0.5.1.zip` from [GitHub Releases](https://github.com/Mahcks/SRankAlert/releases).
+The public repository is [Mahcks/SRankAlert](https://github.com/Mahcks/SRankAlert). Version 0.5.2 is being prepared for publication; its ZIP and a Nexus Mods listing link are pending. Once published, download `SRankAlert-0.5.2.zip` from [GitHub Releases](https://github.com/Mahcks/SRankAlert/releases).
 
 There are two ways to install it: let a small **install script** do the copying and the `mods.txt` edit for you, or do everything by hand. Either way, you do steps 0 to 2 yourself, because the script doesn't install UE4SS.
 
@@ -137,7 +137,7 @@ The easiest check is in-game: a brief **S-RANK ALERTS ACTIVE** message shortly a
 For a proper check, open `ReadyOrNot\Binaries\Win64\ue4ss\UE4SS.log` in Notepad (UE4SS starts a fresh one each time you launch the game) and search for `[SRankAlert]`. A healthy start looks roughly like this:
 
 ```
-[SRankAlert] loaded v0.5.1; ... F9 tap dismiss / restart disabled
+[SRankAlert] loaded v0.5.2; ... F9 tap dismiss / restart disabled
 [SRankAlert] game-thread route: ExecuteInGameThreadWithDelay
 [SRankAlert] character HUD observed; waiting for widget tree
 [SRankAlert] toast attached after 250ms; poll=350ms
@@ -170,7 +170,7 @@ Two more alerts exist but are **off by default**, because I couldn't confirm the
 
 Some things worth knowing:
 
-- **Incident alerts don't fade on their own.** Dismiss with F9, or they clear when you leave the mission or the game replaces the character HUD. If more incidents happen while one is showing, the same alert updates to say **MULTIPLE INCIDENTS** with a count of alert groups, rather than stacking up.
+- **Incident alerts don't fade on their own.** Dismiss with F9, or they clear when you leave the mission or the game replaces the character HUD. More events update the same alert: repeated suspect kills keep **SUSPECT KILLED** with a count; mixed types show **MULTIPLE INCIDENTS** with a breakdown such as "2 suspects killed / 1 penalty: Friendly Team Kill". Counts cover what was recorded since the current alert began, not a total of unique actions: one action can also incur a penalty.
 - **Startup and status notices** (like S-RANK ALERTS ACTIVE) disappear by themselves after about five and a half seconds.
 - **Missing data is reported as missing.** If the mod can't read something, it says so instead of assuming zero.
 - **Scoring rules have to be readable and marked official.** Otherwise, rank-related incident alerts are suppressed; human player deaths can still be reported. The incomplete-check notice explains that coverage is limited.
@@ -241,7 +241,7 @@ I'd rather you hear these from me:
 - **Visual verification is partial.** The Roboto alphabet specimen and the solid, progressing fill were confirmed by the tester in-game. The latest bottom-edge fill correction still needs a near-full screenshot. Current alert legibility, HUD overlap and bright/dark-scene comparisons also remain pending; automated layout checks cannot establish those.
 - **Resolutions are checked on paper only.** I checked layout math for 1920x1080, 2560x1440 and 3440x1440 at a few UI scales, but not by looking at the game at each one. Unusual aspect ratios haven't been tested. If it looks off for you, `SCALE`, `WIDTH` and `CENTER_OFFSET` can help, and please report it.
 - **Restart is unverified in a real game** (see [Controls](#controls)).
-- **The detail on an alert is basic.** You get the headline, and sometimes a player or objective name or a count. When several things happen at once, you get the first related event and a "+N more", not the full list. It can't tell you *which* civilian, or who shot them.
+- **The detail on an alert is basic.** Single-category alerts can show a player/objective name and a count; mixed alerts show counts by category. If there are too many categories to fit, "+N types" indicates the remaining categories. Different player/objective/penalty names can be combined, so check the log for full details. It can't tell you *which* civilian, or who shot them.
 - **The mod estimates, it doesn't know.** There's no official "you've lost S rank" signal to read, so the mod applies the standard rules to the numbers the game exposes. A quiet screen isn't a guarantee, and edge cases (special scripted exceptions, for instance) may be wrong.
 - **Co-op:** every player who wants alerts needs their own install. The mod only sees data the game shares with each player. Spectator view isn't supported.
 - **Other mods and game updates** can change what the mod can read.
@@ -298,7 +298,7 @@ python tests/package_spec.py
 ```
 
 The tests use simulated game objects and isolated folders; they don't need the game
-or change your installed mods. The package check builds `dist/SRankAlert-0.5.1.zip`
+or change your installed mods. The package check builds `dist/SRankAlert-0.5.2.zip`
 and checks its contents and reproducibility. `python tools/package.py` builds the
 ZIP by itself. Build output stays out of Git.
 
@@ -309,7 +309,7 @@ automatically published as releases. In-game appearance and behavior still need
 live checks; CI can't establish those.
 
 Release names use `vMAJOR.MINOR.PATCH` tags and `SRankAlert-MAJOR.MINOR.PATCH.zip`
-downloads. For this prepared release, use tag `v0.5.1`, title **SRankAlert v0.5.1**,
-and `SRankAlert-0.5.1.zip`. The package test checks that the runtime log, README,
+downloads. For this prepared release, use tag `v0.5.2`, title **SRankAlert v0.5.2**,
+and `SRankAlert-0.5.2.zip`. The package test checks that the runtime log, README,
 config guide, changelog and ZIP version agree. Create the tag and GitHub release
 only after the pending live checks and release decisions are resolved.

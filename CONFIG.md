@@ -1,6 +1,6 @@
 # Editing your settings
 
-Settings reference for version 0.5.1.
+Settings reference for version 0.5.2.
 
 Want a different key, a bigger alert, or no restart button? Start with
 [Settings most people will want to change](#settings-most-people-will-want-to-change).

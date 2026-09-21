@@ -72,6 +72,7 @@ local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
     mgr.GetWorld=hud.GetWorld; gs.GetWorld=hud.GetWorld
     mgr.bIsOfficialScoring=true
     local kills, civilian, penalty=0,0,0
+    local penaltyName="Unauthorized force"
     mgr.GetSuspectCount=function(_,a,b,c,d)
         engine(); a.OutReported=0; a.OutArrested=0; a.OutKilled=kills; a.OutTotal=5
     end
@@ -81,7 +82,7 @@ local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
     mgr.GetScoreGroups=function() engine(); return {} end
     mgr.GetPenaltyScoreGroups=function()
         engine(); if penalty==0 then return {} end
-        return {{GroupName=text("Unauthorized force"),Score=-50,PenaltyCount=penalty}}
+        return {{GroupName=text(penaltyName),Score=-50,PenaltyCount=penalty}}
     end
     gs.MissionObjectives={}
     local player=object("PlayerState Alex"); player.GetWorld=hud.GetWorld
@@ -192,6 +193,23 @@ local function run(tier, probe, invalidConfig, restartChoice, toggleCase)
             return table.concat(parts," ")
         end
         return collect(c)
+    end
+    if toggleCase=="summary" then
+        penaltyName="Friendly Team Kill"
+        penalty=1; advance(600)
+        assert(shown():find("FRIENDLY TEAM KILL",1,true))
+        kills=1; advance(950)
+        kills=2; advance(1300)
+        assert(shown():find("2 suspects killed / 1 penalty: Friendly Team Kill",1,true),"screenshot regression: lost incident breakdown")
+        assert(not shown():find("alert groups",1,true),"internal batching leaked into HUD")
+        dismiss()
+        kills=3; advance(time+350)
+        assert(shown():find("SUSPECT KILLED",1,true) and not shown():find("penalty",1,true),"dismiss did not reset displayed counts")
+        kills=4; advance(time+350)
+        assert(shown():find("SUSPECT KILLED",1,true) and shown():find("Count: 2",1,true))
+        print=realPrint
+        realPrint("runtime summary: team-kill plus two suspects reproducer and post-dismiss counts passed")
+        return
     end
     if toggleCase then
         local mode=object("Mode toggle test")
@@ -433,3 +451,4 @@ run("delayed",false,"json")
 run("delayed",false,false,true,"normal")
 run("composed",false,false,true,"startoff")
 run("delayed",false,false,true,"custom")
+run("delayed",false,false,false,"summary")

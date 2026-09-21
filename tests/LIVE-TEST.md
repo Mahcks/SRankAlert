@@ -1,4 +1,4 @@
-# 0.5.1 live release checks
+# 0.5.2 live release checks
 
 This is the current checklist, replacing the older per-version test instructions.
 Unchecked items are pending. Simulated tests do not count as a live pass.
@@ -13,7 +13,7 @@ Record the game build, UE4SS build, resolution and UI scale with each result.
 - [x] Installer ran against the real game folder with the game closed; backups
   and copied-file hashes verified. First native load generated persistent JSON.
 
-These observations predate the prepared 0.5.1 ZIP. They do not establish a complete
+These observations predate the prepared 0.5.2 ZIP. They do not establish a complete
 current-release pass.
 
 ## Controls and mission behavior

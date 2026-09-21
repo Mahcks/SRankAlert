@@ -1,6 +1,7 @@
 -- One toast at a time. A poll batches simultaneous observations into one
 -- event bundle so a kill and its recorded penalty are not separate popups.
 local M = {}
+local Presentation = require("presentation")
 function M.new()
     local self = { pending = {}, current = nil, generation = 0 }
     function self:push(message)
@@ -11,12 +12,7 @@ function M.new()
             return
         end
         if not pending.sound then self.pending[1] = message; return end
-        local count = (pending.bundles or 1) + 1
-        local severity = (pending.visual.severity == "critical" or message.visual.severity == "critical")
-            and "critical" or "warning"
-        self.pending[1] = {sound=true, bundles=count, visual={
-            headline="MULTIPLE INCIDENTS", severity=severity,
-            context=tostring(count) .. " alert groups; latest: " .. message.visual.headline}}
+        self.pending[1] = {sound=true, visual=Presentation.merge(pending.visual, message.visual)}
     end
     function self:clear()
         self.pending, self.current = {}, nil

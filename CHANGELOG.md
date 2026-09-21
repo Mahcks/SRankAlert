@@ -6,6 +6,16 @@ milestones; their release dates were not recorded.
 
 ## Unreleased
 
+## 0.5.2 (prepared; not yet published)
+
+### Fixed
+
+- Replaced the confusing "alert groups" batch counter with recorded counts by
+  category, such as "2 suspects killed / 1 penalty: Friendly Team Kill".
+- Repeated events of the same type retain their specific headline and count.
+  Visible and queued alerts now share the same merge logic, so splitting reports
+  across different polls does not change the summary. Dismissing resets its counts.
+
 ## 0.5.1 (prepared; not yet published)
 
 ### Added
